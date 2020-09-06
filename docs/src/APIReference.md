@@ -1,6 +1,6 @@
 # API References
 
 ```@autodocs
-Modules = [TextAnalysis]
+Modules = [TextModels, TextModels.ULMFiT]
 Order   = [:function, :type]
 ```

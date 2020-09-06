@@ -1,4 +1,4 @@
-using TextAnalysis: AveragePerceptron
+using TextModels: AveragePerceptron, PerceptronTagger
 
 @testset "Average Perceptron Tagger" begin
     tagger = PerceptronTagger(false)

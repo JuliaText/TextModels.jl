@@ -1,31 +1,12 @@
-using SparseArrays
 using Test
-using Languages
 using TextAnalysis
-using WordTokenizers
+using TextModels
 
 println("Running tests:")
 
 include("crf.jl")
 include("ner.jl")
 include("pos.jl")
-include("coom.jl")
-include("tokenizer.jl")
-include("ngramizer.jl")
-include("document.jl")
-include("metadata.jl")
-include("corpus.jl")
-include("preprocessing.jl")
-include("dtm.jl")
-include("stemmer.jl")
-include("tf_idf.jl")
-include("lda.jl")
-include("lsa.jl")
-include("summarizer.jl")
-include("sentiment.jl")
-include("bayes.jl")
-include("taggingschemes.jl")
 include("averagePerceptronTagger.jl")
-include("evaluation_metrics.jl")
 include("ulmfit.jl")
-include("LM.jl")
+include("sentiment.jl")

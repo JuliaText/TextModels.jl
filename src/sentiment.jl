@@ -11,11 +11,11 @@ function pad_sequences(l, maxlen=500)
     end
 end
 
-function read_weights(filename=sentiment_weights)
+function read_weights(filename=joinpath(sentiment_model, "model", "sentiment-analysis-weights.bson"))
     return BSON.load(filename)
 end
 
-function read_word_ids(filename=sentiment_words)
+function read_word_ids(filename=joinpath(sentiment_model, "model", "sentiment-analysis-word-to-id.json"))
     return JSON.parse(String(read(open(filename, "r"))))
 end
 

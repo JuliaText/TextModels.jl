@@ -69,7 +69,7 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
 
     # Load CRF.
     crf_wt = BSON.load(joinpath(weights_path, "crf_cpu.bson"))[:crf_Weights]
-    c = TextAnalysis.CRF(crf_wt, size(crf_wt)[1] - 2)
+    c = TextModels.CRF(crf_wt, size(crf_wt)[1] - 2)
 
     # Load Conv
     conv_wt_bias = BSON.load(joinpath(weights_path, "conv_cpu.bson"))

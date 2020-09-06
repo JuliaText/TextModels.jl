@@ -1,33 +1,25 @@
-# TextAnalysis
+# TextModels
 
 A Julia package for working with text.
 
-[![Travis](https://travis-ci.org/JuliaText/TextAnalysis.jl.svg?branch=master)](https://travis-ci.org/JuliaText/TextAnalysis.jl)
-[![Appveyor](https://ci.appveyor.com/api/projects/status/aviks/textanalysis-jl?svg=true)](https://ci.appveyor.com/project/aviks/textanalysis-jl)
-<!--[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliatext.github.io/TextAnalysis.jl/stable) -->
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliatext.github.io/TextAnalysis.jl/dev)
-[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliatext.github.io/TextAnalysis.jl/latest)
+[![Travis](https://travis-ci.org/JuliaText/TextAnalysis.jl.svg?branch=master)](https://travis-ci.org/JuliaText/TextModels.jl)
+[![Appveyor](https://ci.appveyor.com/api/projects/status/aviks/textanalysis-jl?svg=true)](https://ci.appveyor.com/project/aviks/textmodels-jl)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliahub.com/docs/TextModels)
 
-Please see the detailed `manual` and `API Documentation` for the linked above. The package also comes with a set of `docstrings` for offline documentation access.
 
 ## Introduction
 
-TextAnalysis provides support for standard tools and models for working with textual data and natural languages in the Julia langauges. Please see the [documentation](https://juliatext.github.io/TextAnalysis.jl/latest) for more.
+The TextModels package enhances the TextAnalysis package with end-user focussed, practical natural language models, typically based on neural networks (in this case, [Flux](https://fluxml.ai/)).  Please see the [documentation](https://juliatext.github.io/TextAnalysis.jl/latest) for more.
 
-- **Features** : Refer to NEWS.md for the latest features.
 - **License** : [MIT License](https://github.com/JuliaText/TextAnalysis.jl/blob/master/LICENSE.md)
 
 ## Installation
 
 ```julia
-pkg> add TextAnalysis
+pkg> add TextModels
 ```
 
-You may want to work on the master branch for the latest features (as mentioned in NEWS.md).
-
-```julia
-pkg> add TextAnalysis#master
-```
+Some of the models require data files to run, which are downloaded on demand. Therefore, internet access is required at runtime for certain functionality in this package. 
 
 ## Contributing and Reporting Bugs
 

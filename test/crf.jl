@@ -1,6 +1,6 @@
 using Flux
 using Flux: gradient, LSTM, Dense, reset!, onehot, RNN
-using TextAnalysis: score_sequence, forward_score
+using TextModels: score_sequence, forward_score
 
 @testset "crf" begin
     @testset "Loss function" begin
