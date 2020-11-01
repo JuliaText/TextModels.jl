@@ -1,7 +1,7 @@
 name = "TextModels"
 uuid = "77b9cbda-2a23-51df-82a3-24144d1cd378"
 license = "MIT"
-desc = "Julia package for text analysis"
+desc = "Practical Neural Network based models for Natural Language Processing"
 version = "0.1.0"
 
 [deps]
@@ -28,10 +28,12 @@ BSON = "0.2.5"
 DataDeps = "0.7"
 DataStructures = "0.17, 0.18"
 Flux = "0.9"
+JSON = "0.21"
 Languages = "0.4"
 NNlib = "0.6, 0.7"
 StatsBase = "0.33"
 TextAnalysis = "0.7"
+Tracker = "0.2"
 WordTokenizers = "0.5"
 julia = "1.3"
 
