@@ -2,7 +2,7 @@ using Documenter, TextModels
 
 makedocs(
     modules = [TextModels],
-    sitename = "TextAnalysis",
+    sitename = "TextModels",
     format = Documenter.HTML(
     ),
     pages = [

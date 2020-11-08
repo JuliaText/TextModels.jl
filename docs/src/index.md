@@ -2,6 +2,8 @@
 
 The TextModels package enhances the TextAnalysis package with end-user focussed, practical natural language models, typically based on neural networks (in this case, [Flux](https://fluxml.ai/))
 
+This package depends on the [TextAnalysis](https://github.com/JuliaText/TextAnalysis.jl) package, which contains basic algorithms to deal with textual documetns. 
+
 ## Installation
 
 The TextModels package can be installed using Julia's package manager:
