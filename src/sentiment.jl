@@ -8,6 +8,8 @@ function pad_sequences(l, maxlen=500)
             push!(res, ele)
         end
         return res
+    else
+        throw("String length exceeds maximum length.")
     end
 end
 
