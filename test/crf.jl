@@ -1,5 +1,6 @@
 using Flux
-using Flux: gradient, LSTM, Dense, reset!, onehot, RNN
+using Flux: LSTM, Dense, reset!, onehot, RNN
+using Zygote: gradient
 using TextModels: score_sequence, forward_score
 
 @testset "crf" begin
@@ -118,7 +119,7 @@ using TextModels: score_sequence, forward_score
         function train()
             for d in data
                 reset!(lstm)
-                grads = Tracker.gradient(() -> loss(d[1], d[2]), ps)
+                grads = gradient(() -> loss(d[1], d[2]), ps)
                 Flux.Optimise.update!(opt, ps, grads)
             end
         end
@@ -129,17 +130,17 @@ using TextModels: score_sequence, forward_score
         end
         to_sum = [find_loss(d) for d in data]
         l1 = sum(to_sum)
-        dense_param_1 = deepcopy(Tracker.data(d_out.W))
-        lstm_param_1 = deepcopy(Tracker.data(lstm.cell.Wh))
-        crf_param_1 = deepcopy(Tracker.data(c.W))
+        dense_param_1 = deepcopy(d_out.W)
+        lstm_param_1 = deepcopy(lstm.cell.Wh)
+        crf_param_1 = deepcopy(c.W)
 
         for i in 1:10
             train()
         end
 
-        dense_param_2 = deepcopy(Tracker.data(d_out.W))
-        lstm_param_2 = deepcopy(Tracker.data(lstm.cell.Wh))
-        crf_param_2 = deepcopy(Tracker.data(c.W))
+        dense_param_2 = deepcopy(d_out.W))
+        lstm_param_2 = deepcopy(lstm.cell.Wh)
+        crf_param_2 = deepcopy(c.W)
         l2 = sum([find_loss(d) for d in data])
 
         @test l1 > l2

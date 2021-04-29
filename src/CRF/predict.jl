@@ -35,14 +35,14 @@ Computes the forward pass for viterbi algorithm.
 function _decode(c::CRF, x, init_vit_vars)
     α_idx = zeros(Int, c.n + 2, length(x))
 
-    forward_var, α_idx[:, 1] = forward_pass_unit(Tracker.data((c.W .+ x[1]') .+ init_vit_vars))
+    forward_var, α_idx[:, 1] = forward_pass_unit((c.W .+ x[1]') .+ init_vit_vars)
 
     for i in 2:length(x)
-        forward_var, α_idx[:, i] = forward_pass_unit(Tracker.data((c.W .+ x[i]') .+ forward_var'))
+        forward_var, α_idx[:, i] = forward_pass_unit((c.W .+ x[i]') .+ forward_var')
     end
 
     labels = zeros(Int, length(x))
-    labels[end] = argmax(forward_var + Tracker.data(c.W[:, c.n + 2])')[2]
+    labels[end] = argmax(forward_var + (c.W[:, c.n + 2])')[2]
 
     for i in reverse(2:length(x))
         labels[i - 1] =  α_idx[labels[i], i]
