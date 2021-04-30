@@ -24,17 +24,17 @@ opts        : `Vector` of optimizers used to update weights for corresponding la
 
 NOTE: length(opts) == length(layers)
 """
-function discriminative_step!(layers, ηL::Float64, l, opts::Vector)
+function discriminative_step!(layers, lm::LanguageModel, gen, ηL::Float64, opts::Vector)
     @assert length(opts) == length(layers)
     # Gradient calculation
-    grads = Tracker.gradient(() -> l, get_trainable_params(layers))
+    grads = Zygote.gradient(() -> loss(lm, gen), get_trainable_params(layers))
 
     # discriminative step
     ηl = ηL/(2.6^(length(layers)-1))
     for (layer, opt) in zip(layers, opts)
         opt.eta = ηl
         for ps in get_trainable_params([layer])
-            Tracker.update!(opt, ps, grads[ps])
+            Flux.Optimise.update!(opt, ps, grads[ps])
         end
         ηl *= 2.6
     end
@@ -50,32 +50,28 @@ This function contains main training loops for fine-tuning the language model.
 To use this funciton, an instance of LanguageModel and a data loader is needed.
 Read the docs for more info about arguments
 """
-function fine_tune_lm!(lm::LanguageModel, data_loader::Channel=imdb_fine_tune_data,
-        stlr_cut_frac::Float64=0.1, stlr_ratio::Float32=32, stlr_η_max::Float64=4e-3;
+function fine_tune_lm!(lm=LanguageModel(), data_loader=imdb_fine_tune_data,
+        stlr_cut_frac::Float64=0.1, stlr_ratio::Float32=Float32(32), stlr_η_max::Float64=4e-3;
         epochs::Integer=1, checkpoint_itvl::Integer=5000)
 
     opts = [ADAM(0.001, (0.7, 0.99)) for i=1:4]
-    cut = num_of_iters * epochs * stlr_cut_frac
-
+    
     # Fine-Tuning loops
     for epoch=1:epochs
         println("\nEpoch: $epoch")
-        gen = data_loader()
-        num_of_iters = take!(gen)
+        gen = data_loader() 
+	num_of_iters = take!(gen)
+	cut = num_of_iters * epochs * stlr_cut_frac
         T = num_of_iters-Int(floor((num_of_iters*2)/100))
         set_trigger!.(T, lm.layers)
         for i=1:num_of_iters
-
-            # FORWARD
-            l = loss(lm, gen)
-
             # Slanted triangular learning rate step
             t = i + (epoch-1)*num_of_iters
             p_frac = (i < cut) ? i/cut : (1 - ((i-cut)/(cut*(1/stlr_cut_frac-1))))
             ηL = stlr_η_max*((1+p_frac*(stlr_ratio-1))/stlr_ratio)
 
             # Backprop with discriminative fine-tuning step
-            discriminative_step!(lm.layers[[1, 3, 5, 7]], ηL, l, opts)
+            discriminative_step!(lm.layers[[1, 3, 5, 7]], lm, gen, ηL, opts)
 
             # Resets dropout masks for all the layers with DropOut or DropConnect
             reset_masks!.(lm.layers)
@@ -121,7 +117,7 @@ julia> insert!(vocab, 2, "_pad_")
 function set_vocab!(lm::LanguageModel, vocab::Vector)
     idxs = indices(vocab, lm.vocab)
     lm.vocab = vocab
-    lm.layers[1].emb = param(Tracker.data(lm.layers[1].emb)[idxs, :])
+    lm.layers[1].emb = param(lm.layers[1].emb[idxs, :])
     lm.layers[1].mask = gpu(drop_mask((length(vocab),), lm.layers[1].p))
     return
 end
