@@ -2,7 +2,7 @@ name = "TextModels"
 uuid = "77b9cbda-2a23-51df-82a3-24144d1cd378"
 license = "MIT"
 desc = "Practical Neural Network based models for Natural Language Processing"
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
