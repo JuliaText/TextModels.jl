@@ -7,7 +7,6 @@ env:
   - DATADEPS_ALWAYS_ACCEPT=true
 julia:
   - 1.6
-  - 1
   - nightly
 matrix:
   allow_failures:
