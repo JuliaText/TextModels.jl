@@ -1,4 +1,7 @@
-using BSON, Tracker
+using BSON
+using Flux: LSTMCell
+using Flux
+
 mutable struct BiLSTM_CNN_CRF_Model{C, W, L, D, O, A}
     labels::Array{String, 1} # List of Labels
     chars_idx#::Dict{Char, Integer} # Dict that maps chars to indices in W_Char_Embed
@@ -27,7 +30,7 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx, UNK_Wo
                 Dense(LSTM_STATE_SIZE * 2, length(labels) + 2), CRF(n), init_α, UNK_Word_idx, UNK_char_idx)
 end
 
-function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Word_idx, weights_path)
+function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx, UNK_Word_idx, weights_path)
     n = length(labels)
     init_α = fill(-10000, (n + 2, 1))
     init_α[n + 1] = 0
@@ -41,24 +44,24 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
     forward_lstm = Flux.Recur(Flux.LSTMCell(forward_wts[:lstm_2], # Wi
                                             forward_wts[:lstm_1], # Wh
                                             forward_wts[:lstm_3], # b
-                                            forward_wts[:lstm_4], # h
-                                            forward_wts[:lstm_5]  # c
-                                           ),
-                              forward_wts[:lstm_init],
-                              forward_wts[:lstm_state]
-                             )
+                                            reshape.(forward_wts[:lstm_init], :, 1)
+                                            # (reshape(forward_wts[:lstm_4], :, 1),
+                                            # reshape(forward_wts[:lstm_5], :, 1)) #(h, c)
+                                            ),
+                              reshape.(forward_wts[:lstm_state], :, 1)
+                              )
 
     # Backward_LSTM
     backward_wts = BSON.load(joinpath(weights_path, "backward_lstm.bson"))
     backward = Flux.Recur(Flux.LSTMCell(backward_wts[:lstm_2], # Wi
-                                             backward_wts[:lstm_1], # Wh
-                                             backward_wts[:lstm_3], # b
-                                             backward_wts[:lstm_4], # h
-                                             backward_wts[:lstm_5]  # c
-                                            ),
-                               backward_wts[:lstm_init],
-                               backward_wts[:lstm_state]
-                              )
+                                        backward_wts[:lstm_1], # Wh
+                                        backward_wts[:lstm_3], # b
+                                        reshape.(backward_wts[:lstm_init], :, 1)
+                                        # (reshape(backward_wts[:lstm_4], :, 1),
+                                        #  reshape(backward_wts[:lstm_5], :, 1)) # (h, c)
+                                        ),
+                           reshape.(backward_wts[:lstm_state], :, 1)
+                           )
 
     # Dense
     d_weights_bias = BSON.load(joinpath(weights_path, "d_cpu.bson"))
@@ -86,22 +89,26 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
 end
 
 function (a::BiLSTM_CNN_CRF_Model)(x)
+
     char_features = Chain(x -> reshape(x, size(x)..., 1,1),
                           a.conv1,
                           x -> maximum(x, dims=2),
                           x -> reshape(x, length(x),1))
-    input_embeddings((w, cs)) = vcat(a.W_word_Embed * w, char_features(a.W_Char_Embed * cs))
-    backward_lstm(x) = reverse((a.backward).(reverse(x)))
-    bilstm_layer(x) = vcat.((a.forward_lstm).(x), backward_lstm(x))
-    m = Chain(x -> input_embeddings.(x),
-              bilstm_layer,
-              x -> (a.d_out).(x))
+    input_embeddings((w, cs)) = vcat(a.W_word_Embed * w,
+                                     hcat(char_features.([a.W_Char_Embed*c for c in cs])...))
+    backward_lstm(x) = reverse(a.backward(reverse(x, dims=2)), dims=2)
+    bilstm_layer(x) = vcat(a.forward_lstm(x), backward_lstm(x))
+    m = Chain(input_embeddings, bilstm_layer, a.d_out)
 
     oh_outs = viterbi_decode(a.c, m(x), a.init_α)
     Flux.reset!(a.backward)
     Flux.reset!(a.forward_lstm)
-    [a.labels[oh.ix] for oh in oh_outs]
+
+    # display(a.labels)
+
+    [onecold(oh_outs[:, i], a.labels) for i = 1:size(oh_outs, 2)]
 end
 
-onehotinput(m::BiLSTM_CNN_CRF_Model, word) = (onehot(get(m.words_idx, lowercase(word), m.UNK_Word_idx), 1:length(m.words_idx)),
-                onehotbatch([get(m.chars_idx, c, m.UNK_char_idx) for c in word], 1:length(m.chars_idx)))
+onehotinput(m::BiLSTM_CNN_CRF_Model, words) =
+    onehotbatch((get(m.words_idx, lowercase(word), m.UNK_Word_idx) for word in words), 1:length(m.words_idx)+1),
+    [onehotbatch([get(m.chars_idx, c, m.UNK_char_idx) for c in word], 1:length(m.chars_idx)+1) for word in words]

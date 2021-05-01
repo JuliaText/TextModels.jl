@@ -1,4 +1,4 @@
-using BSON, Tracker
+using BSON
 
 const PoSCharUNK = '¿'
 const PoSWordUNK = "<UNK>"
@@ -15,10 +15,7 @@ function PoSTagger(dicts_path, weights_path)
     PoSModel(model)
 end
 
-function (a::PoSModel)(tokens::Array{String,1})
-    input_oh = [onehotinput(a.model, token) for token in tokens]
-    return (a.model)(input_oh)
-end
+(a::PoSModel)(tokens::Array{String,1}) = (a.model)(onehotinput(a.model, tokens))
 
 function (a::PoSModel)(sentence::AbstractString)
     a(WordTokenizers.tokenize(sentence))

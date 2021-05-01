@@ -33,26 +33,24 @@ end
 Computes the forward pass for viterbi algorithm.
 """
 function _decode(c::CRF, x, init_vit_vars)
-    α_idx = zeros(Int, c.n + 2, length(x))
+    len = size(x)[end]
+    α_idx = zeros(Int, c.n + 2, len)
 
-    forward_var, α_idx[:, 1] = forward_pass_unit(Tracker.data((c.W .+ x[1]') .+ init_vit_vars))
+    forward_var, α_idx[:, 1] = forward_pass_unit((c.W .+ x[:, 1]') .+ init_vit_vars)
 
-    for i in 2:length(x)
-        forward_var, α_idx[:, i] = forward_pass_unit(Tracker.data((c.W .+ x[i]') .+ forward_var'))
+    for i in 2:len
+        forward_var, α_idx[:, i] = forward_pass_unit((c.W .+ x[:, i]') .+ forward_var')
     end
 
-    labels = zeros(Int, length(x))
-    labels[end] = argmax(forward_var + Tracker.data(c.W[:, c.n + 2])')[2]
+    labels = zeros(Int, len)
+    labels[end] = argmax(forward_var + c.W[:, c.n + 2]')[2]
 
-    for i in reverse(2:length(x))
+    for i in reverse(2:len)
         labels[i - 1] =  α_idx[labels[i], i]
     end
-
     @assert α_idx[labels[1], 1] == c.n + 1 # Check for START Tag
-    return onehotseq(labels, c.n)
+    return onehotbatch(labels, 1:c.n)
 end
-
-onehotseq(seq, num_labels) = [onehot(i, 1:num_labels) for i in seq]
 
 """
     viterbi_decode(::CRF, input_sequence)
@@ -61,7 +59,7 @@ Predicts the most probable label sequence of `input_sequence`.
 """
 function viterbi_decode(c::CRF, x_seq, init_vit_vars)
     length(x_seq) == 0 && throw("Input sequence is empty")
-    return _decode(cpu(c), cpu.(x_seq), cpu(init_vit_vars))
+    return _decode(cpu(c), cpu(x_seq), cpu(init_vit_vars))
 end
 
 # function predict(c::CRF, x_seq)

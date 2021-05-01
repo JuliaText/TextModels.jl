@@ -19,13 +19,16 @@ last one for stop tag .
 """
 function CRF(n::Integer)
     W = rand(Float32, n + 2, n + 2)
+
+    # Transition to start state should be penalized.
     W[:, n + 1] .= -10000
+    # Transition out of stop state should be penalized.
     W[n + 2, :] .= -10000
 
-    return CRF(param(W), n)
+    return CRF(W, n)
 end
 
-@treelike CRF
+@functor CRF (W,)
 
 function Base.show(io::IO, c::CRF)
     print(io, "CRF with ", c.n + 2, " distinct tags (including START and STOP tags).")

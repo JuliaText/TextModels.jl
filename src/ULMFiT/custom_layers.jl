@@ -8,7 +8,7 @@ This file contains the custom layers defined for this model:
     PooledDense
 """
 
-import Flux: gate, _testmode!, _dropout_kernel
+import Flux: gate, testmode!, _dropout_kernel
 
 reset_masks!(entity) = nothing
 reset_probability!(entity) = nothing
@@ -44,12 +44,11 @@ Moreover this also follows the Vartional DropOut citeria, that is,
 the drop mask is remains same for a whole training pass.
 This is done by saving the masks in 'maskWi' and 'maskWh' fields
 """
-mutable struct WeightDroppedLSTMCell{A, V, M}
+mutable struct WeightDroppedLSTMCell{A, V, S, M}
     Wi::A
     Wh::A
     b::V
-    h::V
-    c::V
+    state0::S
     p::Float64
     maskWi::M
     maskWh::M
@@ -60,17 +59,16 @@ function WeightDroppedLSTMCell(in::Integer, out::Integer, p::Float64=0.0;
     init = Flux.glorot_uniform)
     @assert 0 ≤ p ≤ 1
     cell = WeightDroppedLSTMCell(
-        param(init(out*4, in)),
-        param(init(out*4, out)),
-        param(init(out*4)),
-        param(zeros(Float32, out)),
-        param(zeros(Float32, out)),
+        init(out*4, in),
+        init(out*4, out),
+        init(out*4),
+        (zeros(Float32, out, 1), zeros(Float32, out, 1)),
         p,
         drop_mask((out*4, in), p),
         drop_mask((out*4, out), p),
         true
     )
-    cell.b.data[gate(out, 2)] .= 1
+    cell.b[gate(out, 2)] .= 1
     return cell
 end
 
@@ -88,9 +86,9 @@ function (m::WeightDroppedLSTMCell)((h, c), x)
     return (h′, c), h′
 end
 
-Flux.@treelike WeightDroppedLSTMCell
+Flux.@functor WeightDroppedLSTMCell (Wi, Wh, b, state0)
 
-_testmode!(m::WeightDroppedLSTMCell, test) = (m.active = !test)
+Flux.testmode!(m::WeightDroppedLSTMCell, test) = (m.active = !test)
 
 """
     WeightDroppedLSTM(in::Integer, out::Integer, p::Float64=0.0)
@@ -105,8 +103,8 @@ julia> wd = WeightDroppedLSTM(4, 5, 0.3);
 """
 function WeightDroppedLSTM(a...; kw...)
     cell = WeightDroppedLSTMCell(a...;kw...)
-    hidden = (cell.h, cell.c)
-    return Flux.Recur(cell, hidden, hidden)
+    hidden = cell.state0
+    return Flux.Recur(cell, hidden)
 end
 
 """
@@ -155,7 +153,7 @@ end
 
 AWD_LSTM(in::Integer, out::Integer, p::Float64=0.0; kw...) = AWD_LSTM(WeightDroppedLSTM(in, out, p; kw...), -1, [])
 
-Flux.@treelike AWD_LSTM
+Flux.@functor AWD_LSTM (layer,)
 
 (m::AWD_LSTM)(in) = m.layer(in)
 
@@ -184,12 +182,12 @@ function asgd_step!(iter::Integer, layer::AWD_LSTM)
         p = get_trainable_params([layer])
         avg_fact = 1/max(iter - layer.T + 1, 1)
         if avg_fact != 1
-            layer.accum = layer.accum .+ Tracker.data.(p)
+            layer.accum = layer.accum .+ p
             for (ps, accum) in zip(p, layer.accum)
-                Tracker.data(ps) .= avg_fact*accum
+                ps .= avg_fact*accum
             end
         else
-            layer.accum = deepcopy(Tracker.data.(p))   # Accumulator for ASGD
+            layer.accum = deepcopy(p)   # Accumulator for ASGD
         end
     end
     return
@@ -230,7 +228,7 @@ function (vd::VarDrop)(x)
     return (x .* vd.mask)
 end
 
-_testmode!(vd::VarDrop, test) = (vd.active = !test)
+Flux.testmode!(vd::VarDrop, test) = (vd.active = !test)
 
 # method for reseting mask of VarDrop
 reset_masks!(vd::VarDrop) = (vd.reset = true)
@@ -270,7 +268,7 @@ end
 function DroppedEmbeddings(in::Integer, embed_size::Integer, p::Float64=0.0;
     init = Flux.glorot_uniform)
         de = DroppedEmbeddings{AbstractArray, typeof(p)}(
-            param(init(in, embed_size)),
+            init(in, embed_size),
             p,
             drop_mask((in,), p),
             true
@@ -283,9 +281,9 @@ function (de::DroppedEmbeddings)(x::AbstractArray, tying::Bool=false)
     return tying ? dropped * x : transpose(dropped[x, :])
 end
 
-Flux.@treelike DroppedEmbeddings
+Flux.@functor DroppedEmbeddings (emb, )
 
-_testmode!(de::DroppedEmbeddings, test) = (de.active = !test)
+Flux.testmode!(de::DroppedEmbeddings, test) = (de.active = !test)
 
 function reset_masks!(de::DroppedEmbeddings)
     de.mask = drop_mask(de.mask, de.p)
@@ -324,10 +322,10 @@ PooledDense(W, b) = PooledDense(W, b, identity)
 
 function PooledDense(hidden_sz::Integer, out::Integer, σ = identity;
              initW = Flux.glorot_uniform, initb = (dims...) -> zeros(Float32, dims...))
-return PooledDense(param(initW(out, hidden_sz*3)), param(initb(out)), σ)
+    return PooledDense(initW(out, hidden_sz*3), initb(out), σ)
 end
 
-Flux.@treelike PooledDense
+Flux.@functor PooledDense (W, b)
 
 function (a::PooledDense)(x)
     W, b, σ = a.W, a.b, a.σ

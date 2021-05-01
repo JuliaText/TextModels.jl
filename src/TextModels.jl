@@ -7,8 +7,8 @@ module TextModels
     using Pkg.Artifacts
 
 
-    using Flux, Tracker
-    using Flux: identity, onehot, onecold, @treelike, onehotbatch
+    using Flux
+    using Flux: identity, onehot, onecold, @functor, onehotbatch
 
 
     using TextAnalysis
@@ -43,7 +43,6 @@ module TextModels
         using ..TextAnalysis
         using DataDeps
         using Flux
-        using Tracker
         using BSON
         include("ULMFiT/utils.jl")
         include("ULMFiT/datadeps.jl")

@@ -1,146 +1,117 @@
 using Flux
-using Flux: gradient, LSTM, Dense, reset!, onehot, RNN
+using Flux: gradient, LSTM, Dense, reset!, onehot, onehotbatch, RNN, params
 using TextModels: score_sequence, forward_score
+using DelimitedFiles
+using LinearAlgebra
 
 @testset "crf" begin
-    @testset "Loss function" begin
-        input_seq = [rand(4) for i in 1:3]
-        c = CRF(2)
 
-        scores = []
-        push!(scores, score_sequence(c, input_seq, [onehot(1, 1:2), onehot(1, 1:2), onehot(1, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(1, 1:2), onehot(1, 1:2), onehot(2, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(1, 1:2), onehot(2, 1:2), onehot(1, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(1, 1:2), onehot(2, 1:2), onehot(2, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(2, 1:2), onehot(1, 1:2), onehot(1, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(2, 1:2), onehot(1, 1:2), onehot(2, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(2, 1:2), onehot(2, 1:2), onehot(1, 1:2)]))
-        push!(scores, score_sequence(c, input_seq, [onehot(2, 1:2), onehot(2, 1:2), onehot(2, 1:2)]))
+    ks = [onehotbatch([1, 1, 1], 1:2),
+          onehotbatch([1, 1, 2], 1:2),
+          onehotbatch([1, 2, 1], 1:2),
+          onehotbatch([1, 2, 2], 1:2),
+          onehotbatch([2, 1, 1], 1:2),
+          onehotbatch([2, 1, 2], 1:2),
+          onehotbatch([2, 2, 1], 1:2),
+          onehotbatch([2, 2, 2], 1:2)]
+
+    @testset "Loss function" begin
+
+        c = CRF(2)
+        input_seq = rand(4, 3)
+
+        scores = [score_sequence(c, input_seq, k) for k in ks]
 
         init_α = fill(-10000, (c.n + 2, 1))
         init_α[c.n + 1] = 0
 
         s1 = sum(exp.(scores))
+
         s2 = exp(forward_score(c, input_seq, init_α))
 
-        @test (s1 - s2) / max(s1, s2) <= 0.00000001
+        @test abs(s1 - s2) / max(s1, s2) <= 0.00000001
     end
 
     @testset "Viterbi Decode" begin
-        input_seq = [rand(4) for i in 1:3]
         c = CRF(2)
+        input_seq = rand(4, 3)
 
-        k1 = [onehot(1, 1:2), onehot(1, 1:2), onehot(1, 1:2)]
-        k2 = [onehot(1, 1:2), onehot(1, 1:2), onehot(2, 1:2)]
-        k3 = [onehot(1, 1:2), onehot(2, 1:2), onehot(1, 1:2)]
-        k4 = [onehot(1, 1:2), onehot(2, 1:2), onehot(2, 1:2)]
-        k5 = [onehot(2, 1:2), onehot(1, 1:2), onehot(1, 1:2)]
-        k6 = [onehot(2, 1:2), onehot(1, 1:2), onehot(2, 1:2)]
-        k7 = [onehot(2, 1:2), onehot(2, 1:2), onehot(1, 1:2)]
-        k8 = [onehot(2, 1:2), onehot(2, 1:2), onehot(2, 1:2)]
-        k = [k1, k2, k3, k4, k5, k6, k7, k8]
-
-        scores = []
-        push!(scores, score_sequence(c, input_seq, k1))
-        push!(scores, score_sequence(c, input_seq, k2))
-        push!(scores, score_sequence(c, input_seq, k3))
-        push!(scores, score_sequence(c, input_seq, k4))
-        push!(scores, score_sequence(c, input_seq, k5))
-        push!(scores, score_sequence(c, input_seq, k6))
-        push!(scores, score_sequence(c, input_seq, k7))
-        push!(scores, score_sequence(c, input_seq, k8))
+        scores = [score_sequence(c, input_seq, k) for k in ks]
 
         maxscore_idx = argmax(scores)
 
         init_α = fill(-10000, (c.n + 2, 1))
         init_α[c.n + 1] = 0
 
-        @test viterbi_decode(c, input_seq, init_α) == k[maxscore_idx]
+        @test viterbi_decode(c, input_seq, init_α) == ks[maxscore_idx]
     end
 
     @testset "CRF with Flux Layers" begin
         path = "data/weather.csv"
+
         function load(path::String)
-            lines = readlines(path)
-            lines = strip.(lines)
-            Xs = []
-            Ys = []
-            xs = Array{Array{Float32, 2},1}()
-            ys = Array{String,1}()
-
-            for line in lines
-                if isempty(line)
-                    push!(Xs, xs)
-                    push!(Ys, ys)
-                    xs = Array{Array{Float32, 2},1}()
-                    ys = Array{String,1}()
-                else
-                    x = zeros(Float32, 2, 1)
-                    x1, x2, y = split(line, ',')
-                    x[1] = parse(Float32, x1)
-                    x[2] = parse(Float32, x2)
-                    push!(xs, x)
-                    push!(ys, y)
-                end
-            end
-
-            if length(xs) != 0
-                push!(Xs, xs)
-                push!(Ys, ys)
-            end
-            return Xs, Ys
+            m = readdlm(path, ',')
+            n, nf = size(m)
+            Ys = m[:, end]
+            ls = unique(Ys)
+            nl = length(ls)
+            return Matrix{Float32}(m[:, 1:2]'), onehotbatch(Ys, ls), n, nf-1, ls, nl
         end
 
-        X, Y = load(path)
+        X, Y, n, num_features, labels, num_labels = load(path)
 
-        labels = unique(Iterators.flatten(Y))
-        num_labels = length(labels)
-        num_features = length(X[1][1])
-
-        Y = map.(ch -> onehot(ch, labels), Y)
+        _, T = size(X)
 
         LSTM_STATE_SIZE = 5
+
         d_out = Dense(LSTM_STATE_SIZE, num_labels + 2)
         lstm = RNN(num_features, LSTM_STATE_SIZE)
-        m(x) = d_out.(lstm.(x))
+        m(x) = d_out(lstm(x))
 
         c = CRF(num_labels)
+
         init_α = fill(-10000, (c.n + 2, 1))
         init_α[c.n + 1] = 0
 
-        loss(xs, ys) = crf_loss(c, m(xs), ys, init_α)
-
         opt = Descent(0.01)
-        data = zip(X, Y)
 
         ps = params(params(lstm)..., params(d_out)..., params(c)...)
 
+        NBATCH = 15
+
+        loss(xs, ys) = crf_loss(c, m(xs), ys, init_α) + 1e-4*sum(c.W.*c.W)
+
         function train()
-            for d in data
+            i = 1
+            while true
+                l = i + NBATCH > T ? T : (i + NBATCH - 1)
+                xbatch, ybatch = (@view X[:, i:l]), (@view Y[:, i:l])
                 reset!(lstm)
-                grads = Tracker.gradient(() -> loss(d[1], d[2]), ps)
+                grads = Flux.gradient(() -> loss(xbatch, ybatch), ps)
                 Flux.Optimise.update!(opt, ps, grads)
+                i += NBATCH
+                i >= T && break
             end
         end
 
-        function find_loss(d)
+        function find_loss(x, y)
             reset!(lstm)
-            loss(d[1], d[2])
+            loss(x, y)
         end
-        to_sum = [find_loss(d) for d in data]
-        l1 = sum(to_sum)
-        dense_param_1 = deepcopy(Tracker.data(d_out.W))
-        lstm_param_1 = deepcopy(Tracker.data(lstm.cell.Wh))
-        crf_param_1 = deepcopy(Tracker.data(c.W))
+
+        l1 = find_loss(X, Y)
+        dense_param_1 = deepcopy(d_out.weight)
+        lstm_param_1 = deepcopy(lstm.cell.Wh)
+        crf_param_1 = deepcopy(c.W)
 
         for i in 1:10
             train()
         end
 
-        dense_param_2 = deepcopy(Tracker.data(d_out.W))
-        lstm_param_2 = deepcopy(Tracker.data(lstm.cell.Wh))
-        crf_param_2 = deepcopy(Tracker.data(c.W))
-        l2 = sum([find_loss(d) for d in data])
+        dense_param_2 = deepcopy(d_out.weight)
+        lstm_param_2 = deepcopy(lstm.cell.Wh)
+        crf_param_2 = deepcopy(c.W)
+        l2 = find_loss(X, Y)
 
         @test l1 > l2
         @test dense_param_1 != dense_param_2

@@ -49,7 +49,7 @@ function LanguageModel(load_pretrained::Bool=false, vocabpath::String=joinpath(@
     return lm
 end
 
-Flux.@treelike LanguageModel
+Flux.@functor LanguageModel (layers,)
 
 """
     test_lm(lm::LanguageModel, data_gen, num_of_iters::Integer; unknown_token::String="_unk_")

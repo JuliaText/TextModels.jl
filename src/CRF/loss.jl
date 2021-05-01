@@ -5,13 +5,14 @@ Compute the Normalization / partition function
 or the Forward Algorithm score - `Z`
 """
 function forward_score(c::CRF, x, init_α)
-    forward_var = log_sum_exp((c.W .+ x[1]') .+ init_α)
+    forward_var = log_sum_exp((c.W .+ x[:, 1]') .+ init_α)
 
-    for i in 2:length(x)
-        forward_var = log_sum_exp((c.W .+ x[i]') .+ forward_var')
+    len = size(x)[end]
+    for i in 2:len
+        forward_var = log_sum_exp((c.W .+ x[:, i]') .+ forward_var')
     end
 
-    return log_sum_exp(c.W[:, c.n + 2] + forward_var')[1]
+    return log_sum_exp(c.W[:, c.n + 2] .+ forward_var')[1]
 end
 
 """
@@ -25,14 +26,14 @@ thereby preventing operation.
 eltype(label_seq) = Flux.OneHotVector
 """
 function score_sequence(c::CRF, x, label_seq)
-    score = preds_first(c, label_seq[1]) + onecold(label_seq[1], x[1])
-
-    for i in 2:length(label_seq)
-        score += preds_single(c, label_seq[i], label_seq[i-1]) +
-                    onecold(label_seq[i], x[i])
+    score = preds_first(c, label_seq[:, 1]) + onecold(label_seq[:, 1], x[:, 1])
+    len = size(x)[end]
+    for i in 2:len
+        score += preds_single(c, label_seq[:, i], label_seq[:, i-1]) +
+                    onecold(label_seq[:, i], x[:, i])
     end
 
-    return score + preds_last(c, label_seq[end])
+    return score + preds_last(c, label_seq[:, end])
 end
 
 # REGULARIZATION TERM

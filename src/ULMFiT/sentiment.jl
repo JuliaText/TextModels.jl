@@ -48,12 +48,12 @@ function BinSentimentClassifier()
         )
     )
     Flux.loadparams!(sc, weights)
-    sc = mapleaves(Tracker.data, sc)
+    # sc = mapleaves(Tracker.data, sc)
     Flux.testmode!(sc)
     return sc
 end
 
-Flux.@treelike BinSentimentClassifier
+Flux.@functor BinSentimentClassifier (rnn_layers, linear_layers)
 
 function (sc::BinSentimentClassifier)(x::TokenDocument)
     remove_case!(x)

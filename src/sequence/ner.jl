@@ -37,10 +37,7 @@ function NERTagger(dicts_path, weights_path)
     NERmodel(model)
 end
 
-function (a::NERmodel)(tokens::Array{String,1})
-    input_oh = [onehotinput(a.model, token) for token in tokens]
-    return (a.model)(input_oh)
-end
+(a::NERmodel)(tokens::Array{String,1}) = (a.model)(onehotinput(a.model, tokens))
 
 function (a::NERmodel)(sentence::AbstractString)
     a(WordTokenizers.tokenize(sentence))
