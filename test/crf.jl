@@ -64,9 +64,7 @@ using LinearAlgebra
 
         LSTM_STATE_SIZE = 5
 
-        d_out = Dense(LSTM_STATE_SIZE, num_labels + 2)
-        lstm = RNN(num_features, LSTM_STATE_SIZE)
-        m(x) = d_out(lstm(x))
+        m = Chain(RNN(num_features, LSTM_STATE_SIZE), Dense(LSTM_STATE_SIZE, num_labels + 2))
 
         c = CRF(num_labels)
 
@@ -75,7 +73,7 @@ using LinearAlgebra
 
         opt = Descent(0.01)
 
-        ps = params(params(lstm)..., params(d_out)..., params(c)...)
+        ps = params(params(m)..., params(c)...)
 
         NBATCH = 15
 
@@ -86,7 +84,7 @@ using LinearAlgebra
             while true
                 l = i + NBATCH > T ? T : (i + NBATCH - 1)
                 xbatch, ybatch = (@view X[:, i:l]), (@view Y[:, i:l])
-                reset!(lstm)
+                reset!(m[1])
                 grads = Flux.gradient(() -> loss(xbatch, ybatch), ps)
                 Flux.Optimise.update!(opt, ps, grads)
                 i += NBATCH
@@ -95,21 +93,21 @@ using LinearAlgebra
         end
 
         function find_loss(x, y)
-            reset!(lstm)
+            reset!(m[1])
             loss(x, y)
         end
 
         l1 = find_loss(X, Y)
-        dense_param_1 = deepcopy(d_out.weight)
-        lstm_param_1 = deepcopy(lstm.cell.Wh)
+        dense_param_1 = deepcopy(m[2].weight)
+        lstm_param_1 = deepcopy(m[1].cell.Wh)
         crf_param_1 = deepcopy(c.W)
 
         for i in 1:10
             train()
         end
 
-        dense_param_2 = deepcopy(d_out.weight)
-        lstm_param_2 = deepcopy(lstm.cell.Wh)
+        dense_param_2 = deepcopy(m[2].weight)
+        lstm_param_2 = deepcopy(m[1].cell.Wh)
         crf_param_2 = deepcopy(c.W)
         l2 = find_loss(X, Y)
 
