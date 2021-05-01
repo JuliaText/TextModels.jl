@@ -4,7 +4,7 @@ using BSON
 @testset "Custom layers" begin
     @testset "WeightDroppedLSTM" begin
         wd = ULMFiT.WeightDroppedLSTM(4, 5, 0.3)
-        @test all((wd.cell.state0) .== wd.state)
+        @test all((wd.cell.h, wd.cell.c) .== wd.state)
         @test size(wd.cell.Wi) == size(wd.cell.maskWi)
         @test size(wd.cell.Wh) == size(wd.cell.maskWh)
         @test wd.cell.active

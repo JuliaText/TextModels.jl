@@ -103,7 +103,7 @@ function loss(lm, gen)
     H = forward(lm, take!(gen))
     Y = broadcast(x -> gpu(Flux.onehotbatch(x, lm.vocab, "_unk_")), take!(gen))
     l = sum(Flux.crossentropy.(H, Y))
-    Flux.reset!(lm.layers)
+    reset!(lm.layers)
     return l
 end
 

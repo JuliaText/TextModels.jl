@@ -5,8 +5,7 @@ using TextModels
 println("Running tests:")
 
 include("crf.jl")
-#include("ner.jl")
-#include("pos.jl")
-#include("averagePerceptronTagger.jl")
+include("ner.jl")
+include("pos.jl")
+include("averagePerceptronTagger.jl")
 include("ulmfit.jl")
-#include("sentiment.jl")

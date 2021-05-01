@@ -118,14 +118,14 @@ using TextModels: score_sequence, forward_score
 
         function train()
             for d in data
-                reset!(lstm)
+                Flux.reset!(lstm)
                 grads = gradient(() -> loss(d[1], d[2]), ps)
                 Flux.Optimise.update!(opt, ps, grads)
             end
         end
 
         function find_loss(d)
-            reset!(lstm)
+            Flux.reset!(lstm)
             loss(d[1], d[2])
         end
         to_sum = [find_loss(d) for d in data]
@@ -138,7 +138,7 @@ using TextModels: score_sequence, forward_score
             train()
         end
 
-        dense_param_2 = deepcopy(d_out.W))
+        dense_param_2 = deepcopy(d_out.W)
         lstm_param_2 = deepcopy(lstm.cell.Wh)
         crf_param_2 = deepcopy(c.W)
         l2 = sum([find_loss(d) for d in data])

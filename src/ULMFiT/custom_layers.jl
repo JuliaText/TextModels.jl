@@ -48,7 +48,8 @@ mutable struct WeightDroppedLSTMCell{A, V, S, M}
     Wi::A
     Wh::A
     b::V
-    state0::S
+    h::S
+    c::S
     p::Float64
     maskWi::M
     maskWh::M
@@ -62,8 +63,8 @@ function WeightDroppedLSTMCell(in::Integer, out::Integer, p::Float64=0.0;
         init(out*4, in),
         init(out*4, out),
         init(out*4),
-        (reshape(zeros(Float32, out),out, 1),
-        reshape(zeros(Float32, out), out, 1)),
+        reshape(zeros(Float32, out),out, 1),
+        reshape(zeros(Float32, out), out, 1),
         p,
         drop_mask((out*4, in), p),
         drop_mask((out*4, out), p),
@@ -89,7 +90,7 @@ end
 
 Flux.@functor WeightDroppedLSTMCell
 
-Flux.trainable(m::WeightDroppedLSTMCell) = (m.Wi, m.Wh, m.b, m.state0...)
+Flux.trainable(m::WeightDroppedLSTMCell) = (m.Wi, m.Wh, m.b, m.h, m.c)
 
 testmode!(m::WeightDroppedLSTMCell, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
@@ -107,9 +108,19 @@ julia> wd = WeightDroppedLSTM(4, 5, 0.3);
 """
 function WeightDroppedLSTM(a...; kw...)
     cell = WeightDroppedLSTMCell(a...;kw...)
-    hidden = cell.state0
+    hidden = (cell.h, cell.c)
     return Flux.Recur(cell, hidden)
 end
+
+# over definition for reset! to work with pretrained model
+function reset!(m)
+    try
+        (m.state = (m.cell.h, m.cell.c))
+    catch
+    	Flux.reset!(m)
+    end
+end
+   
 
 """
     reset_masks!(layer)
