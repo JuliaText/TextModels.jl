@@ -43,6 +43,7 @@ module TextModels
         using TextAnalysis
         using DataDeps
         using Flux
+        using Flux:crossentropy
         using Zygote
         using BSON
         using CorpusLoaders
