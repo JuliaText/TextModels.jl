@@ -1,6 +1,5 @@
 using Flux
-using Flux: LSTM, Dense, reset!, onehot, RNN
-using Zygote: gradient
+using Flux: gradient, LSTM, Dense, reset!, onehot, RNN, params
 using TextModels: score_sequence, forward_score
 
 @testset "crf" begin
@@ -109,7 +108,7 @@ using TextModels: score_sequence, forward_score
         init_α = fill(-10000, (c.n + 2, 1))
         init_α[c.n + 1] = 0
 
-        loss(xs, ys) = crf_loss(c, m(xs), ys, init_α)
+        loss(xs, ys) = crf_loss(c, m(xs), ys, init_α) + 1e-4*sum(c.W.*c.W)
 
         opt = Descent(0.01)
         data = zip(X, Y)
@@ -149,3 +148,4 @@ using TextModels: score_sequence, forward_score
         @test crf_param_1 != crf_param_2
     end
 end
+

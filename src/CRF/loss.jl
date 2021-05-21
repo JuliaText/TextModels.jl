@@ -5,7 +5,7 @@ Compute the Normalization / partition function
 or the Forward Algorithm score - `Z`
 """
 function forward_score(c::CRF, x, init_α)
-    forward_var = log_sum_exp((c.W .+ (x[1]') .+ init_α))
+    forward_var = log_sum_exp(c.W .+ x[1]' .+ init_α)
 
     for i in 2:length(x)
         forward_var = log_sum_exp((c.W .+ x[i]') .+ forward_var')
