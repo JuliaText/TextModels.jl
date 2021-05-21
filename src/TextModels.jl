@@ -41,12 +41,12 @@ module TextModels
     # ULMFiT
     module ULMFiT
         using TextAnalysis
-        using DataDeps
         using Flux
         using Flux:crossentropy
         using Zygote
         using BSON
         using CorpusLoaders
+        using DataDeps
         include("ULMFiT/utils.jl")
         include("ULMFiT/datadeps.jl")
         include("ULMFiT/data_loaders.jl")
