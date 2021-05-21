@@ -163,6 +163,11 @@ end
 # To load model
 function load_model!(lm::LanguageModel, filepath::String)
     BSON.@load filepath weights
+    # reshape saved weights to match Recurr (h, c) shape
+    layers = [5, 6, 10, 11, 15, 16]
+    for l in layers
+        weights[l] = reshape(weights[l], length(weights[l]), 1)
+    end
     Flux.loadparams!(lm, weights)
 end
 

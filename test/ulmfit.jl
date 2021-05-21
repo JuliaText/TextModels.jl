@@ -95,6 +95,12 @@ end
     @test length(ULMFiT.get_trainable_params(lm.layers)) == 10
 
     pretrained_weights = BSON.load(datadep"Pretrained ULMFiT Language Model/ulmfit_lm_en.bson")
+    # reshape weights of (h, c) 
+    layers = [5, 6, 10, 11, 15, 16]
+    for i in layers 
+       pretrained_weights[:weights][i] = reshape(pretrained_weights[:weights][i], length(pretrained_weights[:weights][i]), 1)
+    end
+
     @test length(pretrained_weights[:weights]) == 16
     @test all(size.(params(lm)) .== size.(pretrained_weights[:weights]))
 end
