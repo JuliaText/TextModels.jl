@@ -47,7 +47,7 @@ end
             epochs::Integer=1, checkpoint_itvl::Integer=5000)
 
 This function contains main training loops for fine-tuning the language model.
-To use this funciton, an instance of LanguageModel and a data loader is needed.
+To use this function, an instance of LanguageModel and a data loader is needed.
 Read the docs for more info about arguments
 """
 function fine_tune_lm!(lm=LanguageModel(), data_loader=imdb_fine_tune_data,

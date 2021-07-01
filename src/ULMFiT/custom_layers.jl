@@ -63,7 +63,7 @@ function WeightDroppedLSTMCell(in::Integer, out::Integer, p::Float64=0.0;
         init(out*4, in),
         init(out*4, out),
         init(out*4),
-        reshape(zeros(Float32, out),out, 1),
+        reshape(zeros(Float32, out), out, 1),
         reshape(zeros(Float32, out), out, 1),
         p,
         drop_mask((out*4, in), p),
@@ -112,9 +112,15 @@ function WeightDroppedLSTM(a...; kw...)
     return Flux.Recur(cell, hidden)
 end
 
-# over definition for reset! to work with pretrained model
+"""
+    reset!(m)
+
+Resets the h, c parameters of the LSTM Cell.
+    
+For more refer [`Flux.reset`](@ref https://fluxml.ai/Flux.jl/stable/models/layers/#Flux.reset!)
+"""
 function reset!(m)
-    try
+    try		# to accomodate the definition in previously trained Language Model
         (m.state = (m.cell.h, m.cell.c))
     catch
     	Flux.reset!(m)
