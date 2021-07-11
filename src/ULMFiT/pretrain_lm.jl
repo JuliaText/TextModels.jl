@@ -49,7 +49,7 @@ function LanguageModel(load_pretrained::Bool=false, vocabpath::String=joinpath(@
     return lm
 end
 
-Flux.@treelike LanguageModel
+Flux.@functor LanguageModel
 
 """
     test_lm(lm::LanguageModel, data_gen, num_of_iters::Integer; unknown_token::String="_unk_")
@@ -63,7 +63,7 @@ It returns loss, accuracy, precsion, recall and F1 score.
 julia> test_lm(lm, data_gen, 200, "<unk")
 """
 function test_lm(lm::LanguageModel, data_gen, num_of_iters::Integer; unknown_token::String="_unk_")
-    model_layers = mapleaves(Tracker.data, lm.layers)
+    model_layers = lm.layers
     testmode!(model_layers)
     loss = 0
     len = length(vocab)
@@ -93,6 +93,7 @@ end
 # computes the forward pass while training
 function forward(lm, batch)
     batch = map(x -> indices(x, lm.vocab, "_unk_"), batch)
+    batch = gpu(batch)
     batch = lm.layers.(batch)
     return batch
 end
@@ -101,17 +102,17 @@ end
 function loss(lm, gen)
     H = forward(lm, take!(gen))
     Y = broadcast(x -> gpu(Flux.onehotbatch(x, lm.vocab, "_unk_")), take!(gen))
-    l = sum(crossentropy.(H, Y))
-    Flux.truncate!(lm.layers)
+    l = sum(Flux.crossentropy.(H, Y))
+    reset!(lm.layers)
     return l
 end
 
 # Backpropagation step while training
-function backward!(layers, l, opt)
+function backward!(layers, lm, gen, opt)
     # Calulating gradients and weights updation
     p = get_trainable_params(layers)
-    grads = Tracker.gradient(() -> l, p)
-    Tracker.update!(opt, p, grads)
+    grads = Zygote.gradient(() -> loss(lm, gen), p)
+    Flux.Optimise.update!(opt, p, grads)
     return
 end
 
@@ -138,11 +139,8 @@ function pretrain_lm!(lm::LanguageModel=LanguageModel(), data_loader::Channel=lo
         set_trigger!.(T, lm.layers)  # Setting triggers for AWD_LSTM layers
         for i=1:num_of_batches
 
-            # FORWARD PASS
-            l = loss(lm, gen)
-
             # REVERSE PASS
-            backward!(lm.layers, l, opt)
+            backward!(lm.layers, lm, gen, opt)
 
             # ASGD Step, works after Triggering
             asgd_step!.(i, lm.layers)
@@ -158,13 +156,18 @@ end
 
 # To save model
 function save_model!(m::LanguageModel, filepath::String)
-    weights = cpu.(Tracker.data.(params(m)))
+    weights = cpu.(params(m))
     BSON.@save filepath weights
 end
 
 # To load model
 function load_model!(lm::LanguageModel, filepath::String)
     BSON.@load filepath weights
+    # reshape saved weights to match Recurr (h, c) shape
+    layers = [5, 6, 10, 11, 15, 16]
+    for l in layers
+        weights[l] = reshape(weights[l], length(weights[l]), 1)
+    end
     Flux.loadparams!(lm, weights)
 end
 
@@ -182,7 +185,7 @@ SAMPLING...
 """
 function sample(starting_text::AbstractDocument, lm::LanguageModel)
     testmode!(lm.layers)
-    model_layers = mapleaves(Tracker.data, lm.layers)
+    model_layers = lm.layers
     tokens = tokens(starting_text)
     word_indices = map(x -> indices([x], lm.vocab, "_unk_"), tokens)
     h = (model_layers.(word_indices))[end]

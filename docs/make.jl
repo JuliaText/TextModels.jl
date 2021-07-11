@@ -8,8 +8,10 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Conditional Random Fields" => "crf.md",
-        "Named Entity Recognition" => "ner.md",
         "ULMFiT" => "ULMFiT.md",
+        "Named Entity Recognition" => "ner.md",
+        "Tagging Schemes" => "tagging.md",
+        "Sentiment Analyzer" => "sentiment.md",
         "API References" => "APIReference.md"
     ],
 )

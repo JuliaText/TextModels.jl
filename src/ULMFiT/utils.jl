@@ -27,8 +27,8 @@ end
 init_weights(extreme::AbstractFloat, dims...) = randn(Float32, dims...) .* sqrt(Float32(extreme))
 
 # Generator, whenever it should be called two times since it gives X in first and y in second call
-function generator(c::Channel, corpus::AbstractDocument; batchsize::Integer=64, bptt::Integer=70)
-    X_total = post_pad_sequences(chunk(tokens(corpus), batchsize))
+function generator(c::Channel, corpus; batchsize::Integer=64, bptt::Integer=70)
+    X_total = post_pad_sequences(Flux.chunk(corpus, batchsize))
     n_batches = Int(floor(length(X_total[1])/bptt))
     put!(c, n_batches)
     for i=1:n_batches

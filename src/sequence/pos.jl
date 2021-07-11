@@ -1,4 +1,4 @@
-using BSON, Tracker
+using BSON
 
 const PoSCharUNK = '¿'
 const PoSWordUNK = "<UNK>"
