@@ -36,8 +36,13 @@ module TextModels
     include("sequence/pos_datadeps.jl")
     include("sequence/pos.jl")
     include("sequence/sequence_models.jl")
-     
-   
+    
+    # ALBERT
+    function __init__()
+        include(joinpath(@__DIR__, "./albert/datadeps.jl"))
+    end 
+    include("./albert/ALBERT.jl")
+
     # ULMFiT
     module ULMFiT
         using TextAnalysis
