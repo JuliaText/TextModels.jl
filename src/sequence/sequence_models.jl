@@ -73,12 +73,12 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
 
     # Load Conv
     conv_wt_bias = BSON.load(joinpath(weights_path, "conv_cpu.bson"))
-    conv1 = Flux.Conv(Flux.identity, # activation
-                      conv_wt_bias[:conv_weight], # weights
+    conv1 = Flux.Conv(conv_wt_bias[:conv_weight], # weights
                       conv_wt_bias[:conv_bias], # bias
-                      (1, 1), # stride
-                      (0, 2), # pad
-                      (1, 1), # dilation
+                      Flux.identity, # activation
+                      stride=1,
+                      pad=(0, 2),
+                      dilation=1
             )
 
     BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, conv1, W_Char_Embed, W_word_Embed,
