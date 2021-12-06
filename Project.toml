@@ -37,6 +37,7 @@ TextAnalysis = "0.7.3"
 WordTokenizers = "0.5.6"
 Zygote = "0.6.10"
 julia = "1.6"
+CorpusLoaders = "0.3"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
