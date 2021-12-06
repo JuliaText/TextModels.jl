@@ -7,8 +7,8 @@ module TextModels
     using Pkg.Artifacts
 
 
-    using Flux, Tracker
-    using Flux: identity, onehot, onecold, @treelike, onehotbatch
+    using Flux, Zygote
+    using Flux: identity, onehot, onecold, @functor, onehotbatch
 
 
     using TextAnalysis
@@ -36,15 +36,17 @@ module TextModels
     include("sequence/pos_datadeps.jl")
     include("sequence/pos.jl")
     include("sequence/sequence_models.jl")
-    
-    
+     
+   
     # ULMFiT
     module ULMFiT
-        using ..TextAnalysis
-        using DataDeps
+        using TextAnalysis
         using Flux
-        using Tracker
+        using Flux:crossentropy
+        using Zygote
         using BSON
+        using CorpusLoaders
+        using DataDeps
         include("ULMFiT/utils.jl")
         include("ULMFiT/datadeps.jl")
         include("ULMFiT/data_loaders.jl")
@@ -60,7 +62,7 @@ module TextModels
         ner_datadep_register()
         pos_datadep_register()
         ULMFiT.ulmfit_datadep_register()
-
+    
         global sentiment_model = artifact"sentiment_model"
     end
 end

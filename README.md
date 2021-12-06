@@ -9,7 +9,7 @@ A Julia package for working with text.
 
 ## Introduction
 
-The TextModels package enhances the TextAnalysis package with end-user focussed, practical natural language models, typically based on neural networks (in this case, [Flux](https://fluxml.ai/)).  Please see the [documentation](https://juliatext.github.io/TextAnalysis.jl/latest) for more.
+The TextModels package enhances the TextAnalysis package with end-user focussed, practical natural language models, typically based on neural networks (in this case, [Flux](https://fluxml.ai/)).  Please see the [documentation](https://juliahub.com/docs/TextModels) for more.
 
 - **License** : [MIT License](https://github.com/JuliaText/TextAnalysis.jl/blob/master/LICENSE.md)
 

@@ -1,4 +1,4 @@
-using BSON, Tracker
+using BSON
 mutable struct BiLSTM_CNN_CRF_Model{C, W, L, D, O, A}
     labels::Array{String, 1} # List of Labels
     chars_idx#::Dict{Char, Integer} # Dict that maps chars to indices in W_Char_Embed
@@ -33,32 +33,32 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
     init_α[n + 1] = 0
 
     # Word and Character Embeddings.
-    W_word_Embed = BSON.load(joinpath(weights_path, "W_word_cpu.bson"))[:W_word_cpu]
-    W_Char_Embed = BSON.load(joinpath(weights_path, "W_char_cpu.bson"))[:W_char_cpu]
+    W_word_Embed = BSON.load(joinpath(weights_path, "W_word_cpu.bson"))[:W_word_cpu][:, 1:end-1]	# no padding char token here
+    W_Char_Embed = BSON.load(joinpath(weights_path, "W_char_cpu.bson"))[:W_char_cpu][:, 1:end-1]	# no padding word token here
 
     # Forward_LSTM
     forward_wts = BSON.load(joinpath(weights_path, "forward_lstm.bson"))
     forward_lstm = Flux.Recur(Flux.LSTMCell(forward_wts[:lstm_2], # Wi
                                             forward_wts[:lstm_1], # Wh
                                             forward_wts[:lstm_3], # b
-                                            forward_wts[:lstm_4], # h
-                                            forward_wts[:lstm_5]  # c
+                                            (reshape(forward_wts[:lstm_4], length(forward_wts[:lstm_4]), 1), # h
+                                            reshape(forward_wts[:lstm_5], length(forward_wts[:lstm_5]), 1))  # c
                                            ),
-                              forward_wts[:lstm_init],
-                              forward_wts[:lstm_state]
-                             )
+                                 (reshape(forward_wts[:lstm_state][1], length(forward_wts[:lstm_state][1]), 1), # h
+                                            reshape(forward_wts[:lstm_state][2], length(forward_wts[:lstm_state][2]), 1)) 
+                              )
 
     # Backward_LSTM
     backward_wts = BSON.load(joinpath(weights_path, "backward_lstm.bson"))
     backward = Flux.Recur(Flux.LSTMCell(backward_wts[:lstm_2], # Wi
                                              backward_wts[:lstm_1], # Wh
                                              backward_wts[:lstm_3], # b
-                                             backward_wts[:lstm_4], # h
-                                             backward_wts[:lstm_5]  # c
-                                            ),
-                               backward_wts[:lstm_init],
-                               backward_wts[:lstm_state]
-                              )
+                                             (reshape(backward_wts[:lstm_4], length(backward_wts[:lstm_4]), 1), # h
+                                            reshape(backward_wts[:lstm_5], length(backward_wts[:lstm_5]), 1))  # c
+                                           ),
+                                 (reshape(backward_wts[:lstm_state][1], length(backward_wts[:lstm_state][1]), 1), # h
+                                            reshape(backward_wts[:lstm_state][2], length(backward_wts[:lstm_state][2]), 1))                   
+                          )
 
     # Dense
     d_weights_bias = BSON.load(joinpath(weights_path, "d_cpu.bson"))
@@ -69,7 +69,7 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
 
     # Load CRF.
     crf_wt = BSON.load(joinpath(weights_path, "crf_cpu.bson"))[:crf_Weights]
-    c = TextModels.CRF(crf_wt, size(crf_wt)[1] - 2)
+    c = CRF(crf_wt, size(crf_wt)[1] - 2)
 
     # Load Conv
     conv_wt_bias = BSON.load(joinpath(weights_path, "conv_cpu.bson"))
@@ -100,7 +100,7 @@ function (a::BiLSTM_CNN_CRF_Model)(x)
     oh_outs = viterbi_decode(a.c, m(x), a.init_α)
     Flux.reset!(a.backward)
     Flux.reset!(a.forward_lstm)
-    [a.labels[oh.ix] for oh in oh_outs]
+    [a.labels[oh.indices] for oh in oh_outs]
 end
 
 onehotinput(m::BiLSTM_CNN_CRF_Model, word) = (onehot(get(m.words_idx, lowercase(word), m.UNK_Word_idx), 1:length(m.words_idx)),

@@ -27,29 +27,29 @@ function imdb_preprocess(doc::AbstractDocument)
         length(word) == 1 && return [word]
         return split(word, symbol)
     end
-    text = text(doc)
-    remove_corrupt_utf8!(text)
-    remove_case!(text)
-    prepare!(text, strip_html_tags)
-    tokens = tokens(text)
+    text_ = doc
+    remove_corrupt_utf8!(text_)
+    remove_case!(text_)
+    prepare!(text_, strip_html_tags)
+    tokens_ = tokens(text_)
     for symbol in [',', '.', '-', '/', "'s"]
-        tokens = split_word.(tokens, symbol)
+        tokens_ = split_word.(tokens_, symbol)
         temp = []
-        for token in tokens
+        for token_ in tokens_
             try
-                append!(temp, put(token, symbol))
+                append!(temp, put(token_, symbol))
             catch
-                append!(temp, token)
+                append!(temp, token_)
             end
         end
-        tokens = temp
+        tokens_ = temp
     end
-    deleteat!(tokens, findall(x -> isequal(x, "")||isequal(x, " "), tokens))
-    return tokens
+    deleteat!(tokens_, findall(x -> isequal(x, "")||isequal(x, " "), tokens_))
+    return tokens_
 end
 
 # Loads WikiText-103 corpus and output a Channel to give a mini-batch at each call
-function load_wikitext_103(batchsize::Integer, bptt::Integer; type = "train")
+function load_wikitext_103(batchsize::Integer=16, bptt::Integer=70; type = "train")
     corpuspath = joinpath(datadep"WikiText-103", "wiki.$(type).tokens")
     corpus = read(open(corpuspath, "r"), String)
     corpus = tokenize(corpus)
@@ -58,13 +58,13 @@ end
 
 # IMDB Data loaders for Sentiment Analysis specifically
 # IMDB data loader for fine-tuning Language Model
-function imdb_fine_tune_data(batchsize::Integer, bptt::Integer, num_examples::Integer=50000)
+function imdb_fine_tune_data(batchsize::Integer=16, bptt::Integer=70, num_examples::Integer=50000)
     imdb_dataset = IMDB("train_unsup")
     dataset = []
-    for path in imdb_dataset.filepaths   #extract data from the files in directory and put into channel
+    for path in imdb_dataset.filepaths[1:num_examples]   #extract data from the files in directory and put into channel
         open(path) do fileio
             cur_text = read(fileio, String)
-            append!(dataset, imdb_preprocess(cur_text))
+            append!(dataset, imdb_preprocess(StringDocument(cur_text)))
         end #open
     end #for
     return Channel(x -> generator(x, dataset; batchsize=batchsize, bptt=bptt))
