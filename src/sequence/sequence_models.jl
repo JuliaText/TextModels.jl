@@ -79,6 +79,8 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
                       (1, 1), # stride
                       (0, 2), # pad
                       (1, 1), # dilation
+                      1 # groups
+
             )
 
     BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, conv1, W_Char_Embed, W_word_Embed,

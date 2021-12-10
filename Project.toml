@@ -25,10 +25,11 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 BSON = "0.3.3"
-DataDeps = "0.7"
 CUDA = "3"
+CorpusLoaders = "0.3"
+DataDeps = "0.7"
 DataStructures = "0.18.9"
-Flux = "0.12.2"
+Flux = "0.12.8"
 JSON = "0.21.1"
 Languages = "0.4.3"
 NNlib = "0.7"
@@ -37,7 +38,6 @@ TextAnalysis = "0.7.3"
 WordTokenizers = "0.5.6"
 Zygote = "0.6.10"
 julia = "1.6"
-CorpusLoaders = "0.3"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
