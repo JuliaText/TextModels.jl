@@ -1,11 +1,12 @@
 # TextModels
 
-A Julia package for working with text.
+A Julia package for natural language neural network models.
 
-[![Travis](https://travis-ci.org/JuliaText/TextAnalysis.jl.svg?branch=master)](https://travis-ci.org/JuliaText/TextModels.jl)
-[![Appveyor](https://ci.appveyor.com/api/projects/status/aviks/textanalysis-jl?svg=true)](https://ci.appveyor.com/project/aviks/textmodels-jl)
+[![](https://github.com/JuliaText/TextModels.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaText/TextModels.jl/actions/workflows/ci.yml)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliahub.com/docs/TextModels)
 
+> **Warning**
+> The models in this repo are no longer state of the art -- the field has moved on very quickly. See [Transformers.jl](https://github.com/chengchingwen/Transformers.jl) for more modern methods.  
 
 ## Introduction
 
