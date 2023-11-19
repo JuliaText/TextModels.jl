@@ -1,5 +1,9 @@
+using Test
 using DataDeps
 using BSON
+using Flux
+using Flux: params
+using TextModels: ULMFiT
 
 @testset "Custom layers" begin
     @testset "WeightDroppedLSTM" begin
