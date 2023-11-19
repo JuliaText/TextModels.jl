@@ -8,7 +8,7 @@ This file contains the custom layers defined for this model:
     PooledDense
 """
 
-import Flux: gate, testmode!, _dropout_kernel
+import Flux: gate, testmode!, dropout
 
 reset_masks!(entity) = nothing
 reset_probability!(entity) = nothing
@@ -25,11 +25,11 @@ It can be used to generate the mask by giving the shape of the desired mask and 
 function drop_mask(x, p)
     y = similar(x, size(x))
     Flux.rand!(y)
-    y .= Flux._dropout_kernel.(y, p, 1 - p)
+    y .= Flux.dropout(y, p)
     return y
 end
 
-drop_mask(shape::Tuple, p; type = Float32) = (mask = rand(type, shape...);mask .= _dropout_kernel.(mask, p, 1 - p))
+drop_mask(shape::Tuple, p; type = Float32) = (mask = rand(type, shape...);mask .= Flux.dropout(mask, p))
 
 #################### Weight-Dropped LSTM Cell ######################
 """
@@ -405,5 +405,5 @@ function get_trainable_params(layers)
             push!(p, l)
         end
     end
-    return params(p...)
+    return Flux.params(p...)
 end
