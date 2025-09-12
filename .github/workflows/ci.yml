@@ -15,13 +15,13 @@ jobs:
         version:
           - '1.10'
           - '1'
-          - 'nightly'
+          # - 'nightly' # incompatible due to strict world age semantics for global bindings in Julia 1.12.
         os:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
         arch:
-          - x86
+          # - x86 
           - x64
         exclude:
           # Remove some configurations from the build matrix to reduce CI time.
