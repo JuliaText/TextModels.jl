@@ -36,7 +36,7 @@ The pretrained model can also be loaded and can be used directly to predict tags
 
 ### To train model:
 ```julia
-julia> tagger = PerceptronTagger(false) #we can use tagger = PerceptronTagger()
+julia> tagger = TextModels.PerceptronTagger(false) #we can use tagger = TextModels.PerceptronTagger()
 julia> fit!(tagger, [[("today","NN"),("is","VBZ"),("good","JJ"),("day","NN")]])
 iteration : 1
 iteration : 2
@@ -47,7 +47,7 @@ iteration : 5
 
 ### To load pretrained model:
 ```julia
-julia> tagger = PerceptronTagger(true)
+julia> tagger = TextModels.PerceptronTagger(true)
 loaded successfully
 PerceptronTagger(AveragePerceptron(Set(Any["JJS", "NNP_VBZ", "NN_NNS", "CC", "NNP_NNS", "EX", "NNP_TO", "VBD_DT", "LS", ("Council", "NNP")  …  "NNPS", "NNP_LS", "VB", "NNS_NN", "NNP_SYM", "VBZ", "VBZ_JJ", "UH", "SYM", "NNP_NN", "CD"]), Dict{Any,Any}("i+2 word wetlands"=>Dict{Any,Any}("NNS"=>0.0,"JJ"=>0.0,"NN"=>0.0),"i-1 tag+i word NNP basic"=>Dict{Any,Any}("JJ"=>0.0,"IN"=>0.0),"i-1 tag+i word DT chloride"=>Dict{Any,Any}("JJ"=>0.0,"NN"=>0.0),"i-1 tag+i word NN choo"=>Dict{Any,Any}("NNP"=>0.0,"NN"=>0.0),"i+1 word antarctica"=>Dict{Any,Any}("FW"=>0.0,"NN"=>0.0),"i-1 tag+i word -START- appendix"=>Dict{Any,Any}("NNP"=>0.0,"NNPS"=>0.0,"NN"=>0.0),"i-1 word wahoo"=>Dict{Any,Any}("JJ"=>0.0,"VBD"=>0.0),"i-1 tag+i word DT children's"=>Dict{Any,Any}("NNS"=>0.0,"NN"=>0.0),"i word dnipropetrovsk"=>Dict{Any,Any}("NNP"=>0.003,"NN"=>-0.003),"i suffix hla"=>Dict{Any,Any}("JJ"=>0.0,"NN"=>0.0)…), DefaultDict{Any,Any,Int64}(), DefaultDict{Any,Any,Int64}(), 1, ["-START-", "-START2-"]), Dict{Any,Any}("is"=>"VBZ","at"=>"IN","a"=>"DT","and"=>"CC","for"=>"IN","by"=>"IN","Retrieved"=>"VBN","was"=>"VBD","He"=>"PRP","in"=>"IN"…), Set(Any["JJS", "NNP_VBZ", "NN_NNS", "CC", "NNP_NNS", "EX", "NNP_TO", "VBD_DT", "LS", ("Council", "NNP")  …  "NNPS", "NNP_LS", "VB", "NNS_NN", "NNP_SYM", "VBZ", "VBZ_JJ", "UH", "SYM", "NNP_NN", "CD"]), ["-START-", "-START2-"], ["-END-", "-END2-"], Any[])
 ```

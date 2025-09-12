@@ -25,7 +25,8 @@ function CRF(n::Integer)
     return CRF(W, n)
 end
 
-@functor CRF
+using Functors
+Functors.@functor CRF
 
 function Base.show(io::IO, c::CRF)
     print(io, "CRF with ", c.n + 2, " distinct tags (including START and STOP tags).")

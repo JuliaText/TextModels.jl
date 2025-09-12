@@ -5,7 +5,7 @@ This package currently provides support for Linear Chain Conditional Random Fiel
 Let us first load the dependencies-
 
     using Flux
-    using Flux: onehot, train!, Params, gradient, LSTM, Dense, reset!
+    using Flux: onehot, LSTM, Dense, reset!
     using TextModels: CRF, viterbi_decode, crf_loss
 
 Conditional Random Field layer is essentially like a softmax that operates on the top most layer.

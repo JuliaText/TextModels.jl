@@ -30,7 +30,8 @@ function TextClassifier(lm::LanguageModel=LanguageModel(), clsfr_out_sz::Integer
     )
 end
 
-Flux.@functor TextClassifier
+using Functors
+Functors.@functor TextClassifier
 
 """
 Cross Validate

@@ -36,36 +36,35 @@ function BiLSTM_CNN_CRF_Model(labels, chars_idx, words_idx, UNK_char_idx,UNK_Wor
     W_word_Embed = BSON.load(joinpath(weights_path, "W_word_cpu.bson"))[:W_word_cpu][:, 1:end-1]	# no padding char token here
     W_Char_Embed = BSON.load(joinpath(weights_path, "W_char_cpu.bson"))[:W_char_cpu][:, 1:end-1]	# no padding word token here
 
-    # Forward_LSTM
+        # Forward_LSTM - Load weights and create LSTM with proper weight initialization
     forward_wts = BSON.load(joinpath(weights_path, "forward_lstm.bson"))
-    forward_lstm = Flux.Recur(Flux.LSTMCell(forward_wts[:lstm_2], # Wi
-                                            forward_wts[:lstm_1], # Wh
-                                            forward_wts[:lstm_3], # b
-                                            (reshape(forward_wts[:lstm_4], length(forward_wts[:lstm_4]), 1), # h
-                                            reshape(forward_wts[:lstm_5], length(forward_wts[:lstm_5]), 1))  # c
-                                           ),
-                                 (reshape(forward_wts[:lstm_state][1], length(forward_wts[:lstm_state][1]), 1), # h
-                                            reshape(forward_wts[:lstm_state][2], length(forward_wts[:lstm_state][2]), 1)) 
-                              )
-
-    # Backward_LSTM
+    input_size = size(forward_wts[:lstm_2], 2)  # Wi input dimension 
+    hidden_size = size(forward_wts[:lstm_1], 2)  # Wh hidden dimension
+    forward_lstm = LSTM(input_size => hidden_size)
+    
+    # Set the actual trained weights
+    forward_lstm.cell.Wi .= forward_wts[:lstm_2]  # Input weights (800, 130)
+    forward_lstm.cell.Wh .= forward_wts[:lstm_1]  # Hidden weights (800, 200)
+    forward_lstm.cell.bias .= forward_wts[:lstm_3]  # Bias (800,)
+    
+    # Backward_LSTM 
     backward_wts = BSON.load(joinpath(weights_path, "backward_lstm.bson"))
-    backward = Flux.Recur(Flux.LSTMCell(backward_wts[:lstm_2], # Wi
-                                             backward_wts[:lstm_1], # Wh
-                                             backward_wts[:lstm_3], # b
-                                             (reshape(backward_wts[:lstm_4], length(backward_wts[:lstm_4]), 1), # h
-                                            reshape(backward_wts[:lstm_5], length(backward_wts[:lstm_5]), 1))  # c
-                                           ),
-                                 (reshape(backward_wts[:lstm_state][1], length(backward_wts[:lstm_state][1]), 1), # h
-                                            reshape(backward_wts[:lstm_state][2], length(backward_wts[:lstm_state][2]), 1))                   
-                          )
+    backward_input_size = size(backward_wts[:lstm_2], 2)
+    backward_hidden_size = size(backward_wts[:lstm_1], 2)
+    backward = LSTM(backward_input_size => backward_hidden_size)
+    
+    # Set the actual trained weights
+    backward.cell.Wi .= backward_wts[:lstm_2]  # Input weights
+    backward.cell.Wh .= backward_wts[:lstm_1]  # Hidden weights  
+    backward.cell.bias .= backward_wts[:lstm_3]  # Bias
 
     # Dense
     d_weights_bias = BSON.load(joinpath(weights_path, "d_cpu.bson"))
-    d_out = Flux.Dense(d_weights_bias[:d_weight],
-                       d_weights_bias[:d_bias],
-                       Flux.identity
-                      )
+    d_out = Dense(
+        d_weights_bias[:d_weight],
+        d_weights_bias[:d_bias],
+        identity
+    )
 
     # Load CRF.
     crf_wt = BSON.load(joinpath(weights_path, "crf_cpu.bson"))[:crf_Weights]
@@ -100,8 +99,7 @@ function (a::BiLSTM_CNN_CRF_Model)(x)
               x -> (a.d_out).(x))
 
     oh_outs = viterbi_decode(a.c, m(x), a.init_α)
-    Flux.reset!(a.backward)
-    Flux.reset!(a.forward_lstm)
+    # Note: reset! is no longer needed in modern Flux
     [a.labels[oh.indices] for oh in oh_outs]
 end
 

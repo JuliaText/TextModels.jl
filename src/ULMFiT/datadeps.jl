@@ -49,7 +49,8 @@ function ulmfit_datadep_register()
         Weights for the binary sentiment classifier, trained on IMDB movie review dataset,
         will be downloaded.
         """,
-        "https://github.com/JuliaText/TextAnalysis.jl/releases/download/v0.6.0/ulmfit_sentiment_en.bson.tar.gz",# link
+        "https://github.com/JuliaText/TextAnalysis.jl/releases/download/v0.6.0/ulmfit_sentiment_en.bson.tar.gz",
+        "03fa2dc05f261f9872e8e637e844fbd3de1b136ffd78e8d3a0b39c294f2ec7bf",
         post_fetch_method = function(fn)
             unpack(fn)
         end
