@@ -18,7 +18,7 @@ jobs:
           # - 'nightly' # incompatible due to strict world age semantics for global bindings in Julia 1.12.
         os:
           - ubuntu-latest
-          - macOS-latest
+          # - macOS-latest  # DataDeps.download() issue 
           - windows-latest
         arch:
           # - x86 
