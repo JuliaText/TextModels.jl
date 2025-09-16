@@ -307,7 +307,7 @@ function (tagger::PerceptronTagger)(input)
 end
 
 predict(tagger::PerceptronTagger, sentence::String) =
-        predict(tagger, tokenize(Languages.English(), sentence))
+        predict(tagger, WordTokenizers.tokenize(sentence))
 predict(tagger::PerceptronTagger, sd::StringDocument) =
         predict(tagger, text(sd))
 predict(tagger::PerceptronTagger, fd::FileDocument) =

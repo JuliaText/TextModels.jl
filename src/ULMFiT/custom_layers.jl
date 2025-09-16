@@ -8,7 +8,13 @@ This file contains the custom layers defined for this model:
     PooledDense
 """
 
-import Flux: gate, testmode!, _dropout_kernel
+import Flux: testmode!, trainable
+
+# Implement gate function that was removed from Flux
+gate(x, h, i) = (1:size(h, 1)) .+ size(h, 1) * (i - 1)
+
+# Implement _dropout_kernel function that was removed from Flux
+_dropout_kernel(y, p, q) = y < p ? zero(y) : y / q
 
 reset_masks!(entity) = nothing
 reset_probability!(entity) = nothing
@@ -25,7 +31,7 @@ It can be used to generate the mask by giving the shape of the desired mask and 
 function drop_mask(x, p)
     y = similar(x, size(x))
     Flux.rand!(y)
-    y .= Flux._dropout_kernel.(y, p, 1 - p)
+    y .= _dropout_kernel.(y, p, 1 - p)
     return y
 end
 
@@ -40,7 +46,7 @@ This is an LSTM layer with dropped weights functionality, that is, DropConnect t
 cite this paper to know about DropConnec:
 http://yann.lecun.com/exdb/publis/pdf/wan-icml-13.pdf
 
-Moreover this also follows the Vartional DropOut citeria, that is,
+Moreover this also follows the Variational DropOut criteria, that is,
 the drop mask is remains same for a whole training pass.
 This is done by saving the masks in 'maskWi' and 'maskWh' fields
 """
@@ -70,7 +76,7 @@ function WeightDroppedLSTMCell(in::Integer, out::Integer, p::Float64=0.0;
         drop_mask((out*4, out), p),
         true
     )
-    cell.b[gate(out, 2)] .= 1
+    cell.b[gate(cell.b, out, 2)] .= 1
     return cell
 end
 
@@ -88,7 +94,8 @@ function (m::WeightDroppedLSTMCell)((h, c), x)
     return (h′, c), h′
 end
 
-Flux.@functor WeightDroppedLSTMCell
+using Functors
+Functors.@functor WeightDroppedLSTMCell
 
 Flux.trainable(m::WeightDroppedLSTMCell) = (m.Wi, m.Wh, m.b, m.h, m.c)
 
@@ -106,10 +113,21 @@ Defining an instance:
 
 julia> wd = WeightDroppedLSTM(4, 5, 0.3);
 """
+struct WeightDroppedLSTMWrapper
+    cell::WeightDroppedLSTMCell
+    state::Tuple
+end
+
+@functor WeightDroppedLSTMWrapper
+
 function WeightDroppedLSTM(a...; kw...)
     cell = WeightDroppedLSTMCell(a...;kw...)
-    hidden = (cell.h, cell.c)
-    return Flux.Recur(cell, hidden)
+    return WeightDroppedLSTMWrapper(cell, (cell.h, cell.c))
+end
+
+# Make the wrapper callable
+function (w::WeightDroppedLSTMWrapper)(x)
+    return w.cell(w.state, x)
 end
 
 """
@@ -117,7 +135,7 @@ end
 
 Resets the h, c parameters of the LSTM Cell.
     
-For more refer [`Flux.reset`](@ref https://fluxml.ai/Flux.jl/stable/models/layers/#Flux.reset!)
+For more refer Flux.reset (https://fluxml.ai/FastAI.jl/dev/Flux@0.13.6/ref/Flux.reset!.html) - obsolete
 """
 function reset!(m)
     try		# to accomodate the definition in previously trained Language Model
@@ -131,14 +149,20 @@ end
 """
     reset_masks!(layer)
 
-This is an important funciton since it used to reset the masks
+This is an important function since it used to reset the masks
 which are saved in WeightDroppedLSTMCell after every pass.
 
 julia> wd = WeightDroppedLSTM()
 
 julia> reset_masks!(wd)
 """
-function reset_masks!(wd::T) where T <: Flux.Recur{<:WeightDroppedLSTMCell}
+function reset_masks!(wd::LSTM{<:WeightDroppedLSTMCell})
+    wd.cell.maskWi = drop_mask(wd.cell.Wi, wd.cell.p)
+    wd.cell.maskWh = drop_mask(wd.cell.Wh, wd.cell.p)
+    return
+end
+
+function reset_masks!(wd::WeightDroppedLSTMWrapper)
     wd.cell.maskWi = drop_mask(wd.cell.Wi, wd.cell.p)
     wd.cell.maskWh = drop_mask(wd.cell.Wh, wd.cell.p)
     return
@@ -153,28 +177,28 @@ Average SGD Weight-Dropped LSTM
 
 This custom layer is used for training the Language model,
 instead of standard LSTM layer.
-This layer carries two addtional functionality:
+This layer carries two additional functionality:
     Weight-dropping (DropConnect)
     Averaging of weights
 
-AWD_LSTM is basically a wrapper aroung WeightDroppedLSTM layer,
+AWD_LSTM is basically a wrapper around WeightDroppedLSTM layer,
 it has three fields:
     layer : WeightDroppedLSTM layer
     T     : Trigger iteration, to trigger averaging
-    accum : After triggring the accumlation of weights is saved here
+    accum : After triggering the accumulation of weights is saved here
 
 cite this paper to know more:
 https://arxiv.org/pdf/1708.02182.pdf
 """
 mutable struct AWD_LSTM
-    layer::Flux.Recur
+    layer::WeightDroppedLSTMWrapper
     T::Integer
     accum
 end
 
 AWD_LSTM(in::Integer, out::Integer, p::Float64=0.0; kw...) = AWD_LSTM(WeightDroppedLSTM(in, out, p; kw...), -1, [])
 
-Flux.@functor AWD_LSTM
+Functors.@functor AWD_LSTM
 
 Flux.trainable(m::AWD_LSTM) = (m.layer,)
 
@@ -192,7 +216,7 @@ reset_masks!(awd::AWD_LSTM) = reset_masks!(awd.layer)
 
 Averaged Stochastic Gradient Descent Step
 
-This funciton performs the Averaging step to the given AWD_LSTM layer,
+This function performs the Averaging step to the given AWD_LSTM layer,
 if the trigger point or trigger iteration is reached.
 Arguments:
     i       : current iteration of the training loop
@@ -263,9 +287,9 @@ reset_masks!(vd::VarDrop) = (vd.reset = true)
 """
     DroppedEmbeddings(in::Integer, embed_size::Integer, p::Float64=0.0)
 
-Embeddings with varitional dropout
+Embeddings with variational dropout
 
-This struct defines an embedding layer with Varitional Embedding dropout functionality.
+This struct defines an embedding layer with Variational Embedding dropout functionality.
 Instead of randomly dropping values of embedding matrix,
 this layer drops all values of a specific token, in other words,
 that token is dropped from the embedding matrix for that particular pass.
@@ -305,7 +329,7 @@ function (de::DroppedEmbeddings)(x::AbstractArray, tying::Bool=false)
     return tying ? dropped * x : transpose(dropped[x, :])
 end
 
-Flux.@functor DroppedEmbeddings
+Functors.@functor DroppedEmbeddings
 
 Flux.trainable(m::DroppedEmbeddings) = (m.emb,)
 
@@ -328,11 +352,11 @@ This is basically a modified version of the `Dense` layer.
 It takes the `Vector` of outputs of RNN at all time-steps,
 then it calculates the mean and max pools for those outputs and
 concatenates output RNN at the last time-step with these max and mean pools.
-Then this conatenated `Vector` is multiplied with weights and added with bias
+Then this concatenated `Vector` is multiplied with weights and added with bias
 and passes through specified activation function.
 
 Usage:
-The first argument `hidden_sz` takes length of the ouput of the preceding RNN layer.
+The first argument `hidden_sz` takes length of the output of the preceding RNN layer.
 Other two arguments are output size and activation function
 
 # Example
@@ -352,7 +376,7 @@ function PooledDense(hidden_sz::Integer, out::Integer, σ = identity;
 return PooledDense(initW(out, hidden_sz*3), initb(out), σ)
 end
 
-Flux.@functor PooledDense
+Functors.@functor PooledDense
 
 function (a::PooledDense)(x)
     W, b, σ = a.W, a.b, a.σ
@@ -368,8 +392,8 @@ end
 """
 get_trainable_params(layers)
 
-This funciton works same as `params` function except for `AWD_LSTM` layer.
-While getting `Params` of the `AWD_LSTM` it does not include the `h` and `c` `params` of `AWD_LSTM`.
+This function works similar to `trainable` function except for `AWD_LSTM` layer.
+While getting trainable parameters of the `AWD_LSTM` it does not include the `h` and `c` parameters of `AWD_LSTM`.
 This is useful while calculating gradients because calculating gradients for `h` and `c` fields
 in `AWD_LSTM` is unnecessary here.
 
@@ -380,7 +404,7 @@ julia> layers = Chain(DroppedEmbeddings(4,5,0.2),
                     Dense(3, 2),
                     softmax
                 );
-julia> p1 = params(layers);
+julia> p1 = trainable(layers);
 julia> p2 = get_trainable_params(layers);
 
 julia> length(p1)
@@ -389,7 +413,7 @@ julia> length(p1)
 julia> length(p2)
 6
 
-`Params` from all the other layers are included in p2 except for `h` and `c`
+Trainable parameters from all the other layers are included in p2 except for `h` and `c`
 """
 function get_trainable_params(layers)
     p = []
@@ -401,9 +425,12 @@ function get_trainable_params(layers)
     for layer in layers
         layer isa Array || (layer = [layer])
         for l in layer
-            l isa AWD_LSTM && (append!(p, get_awd_params(l)); continue)
-            push!(p, l)
+            if l isa AWD_LSTM
+                append!(p, get_awd_params(l))
+            else
+                append!(p, trainable(l))
+            end
         end
     end
-    return params(p...)
+    return p
 end

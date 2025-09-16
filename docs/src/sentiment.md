@@ -27,7 +27,7 @@ A StringDocument{String}
 julia> m(d1)
 0.5183109f0
 
-julia> d = StringDocument("a horrible thing that everyone hates")
+julia> d2 = StringDocument("a horrible thing that everyone hates")
 A StringDocument{String}
  * Language: Languages.English()
  * Title: Untitled Document

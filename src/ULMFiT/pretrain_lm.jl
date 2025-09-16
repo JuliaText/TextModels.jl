@@ -49,7 +49,8 @@ function LanguageModel(load_pretrained::Bool=false, vocabpath::String=joinpath(@
     return lm
 end
 
-Flux.@functor LanguageModel
+using Functors
+Functors.@functor LanguageModel
 
 """
     test_lm(lm::LanguageModel, data_gen, num_of_iters::Integer; unknown_token::String="_unk_")
@@ -156,7 +157,7 @@ end
 
 # To save model
 function save_model!(m::LanguageModel, filepath::String)
-    weights = cpu.(params(m))
+    weights = cpu.(trainable(m))
     BSON.@save filepath weights
 end
 
@@ -168,7 +169,7 @@ function load_model!(lm::LanguageModel, filepath::String)
     for l in layers
         weights[l] = reshape(weights[l], length(weights[l]), 1)
     end
-    Flux.loadparams!(lm, weights)
+    Flux.loadmodel!(lm, weights)
 end
 
 """

@@ -25,11 +25,11 @@ thereby preventing operation.
 eltype(label_seq) = Flux.OneHotVector
 """
 function score_sequence(c::CRF, x, label_seq)
-    score = preds_first(c, label_seq[1]) + onecold(label_seq[1], x[1])
+    score = preds_first(c, label_seq[1]) + x[1][onecold(label_seq[1])]
 
     for i in 2:length(label_seq)
         score += preds_single(c, label_seq[i], label_seq[i-1]) +
-                    onecold(label_seq[i], x[i])
+                    x[i][onecold(label_seq[i])]
     end
 
     return score + preds_last(c, label_seq[end])

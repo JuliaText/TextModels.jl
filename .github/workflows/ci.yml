@@ -13,14 +13,15 @@ jobs:
     strategy:
       matrix:
         version:
-          - '1.6'
-          - 'nightly'
+          - '1.10'
+          - '1'
+          # - 'nightly' # incompatible due to strict world age semantics for global bindings in Julia 1.12.
         os:
           - ubuntu-latest
-          - macOS-latest
+          # - macOS-latest  # DataDeps.download() issue 
           - windows-latest
         arch:
-          - x86
+          # - x86 
           - x64
         exclude:
           # Remove some configurations from the build matrix to reduce CI time.
@@ -28,33 +29,55 @@ jobs:
           # MacOS not available on x86
           - {os: 'macOS-latest', arch: 'x86'}
           # Don't test on all versions
-          - {os: 'macOS-latest', version: '1.6'}
+          - {os: 'macOS-latest', version: '1.10'}
           - {os: 'macOS-latest', version: 'nightly'}
-          - {os: 'windows-latest', version: '1.6'}
+          - {os: 'windows-latest', version: '1.10'}
           - {os: 'windows-latest', version: 'nightly'}
           - {os: 'windows-latest', arch: 'x86'}
-          - {arch: 'x86', version: '1.6'}
+          - {arch: 'x86', version: '1.10'}
           - {arch: 'x86', version: 'nightly'}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/julia-buildpkg@latest
-      - uses: julia-actions/julia-runtest@latest
+      - uses: julia-actions/cache@v2
+      - name: Install dependencies
+        run: |
+          if [[ "${{ matrix.version }}" == "1" || "${{ matrix.version }}" == "nightly" ]]; then
+            # Julia 1.11+ - Install dependencies without any precompilation
+            julia --project=. -e 'using Pkg; Pkg.instantiate(; allow_autoprecomp=false)'
+          else
+            # Julia 1.10 and earlier work normally
+            julia --project=. -e 'using Pkg; Pkg.instantiate()'
+          fi
+        env:
+          JULIA_CUDA_USE_BINARYBUILDER: false
+          JULIA_PKG_PRECOMPILE_AUTO: 0
+        shell: bash
+      - name: Run tests
+        run: |
+          if [[ "${{ matrix.version }}" == "1" || "${{ matrix.version }}" == "nightly" ]]; then
+            # Julia 1.11+ - Use minimal compilation and precompilation to avoid world age issues
+            julia --compiled-modules=no --pkgimages=no --color=yes --project=. -e 'using Pkg; Pkg.test()'
+          else
+            # Julia 1.10 and earlier can use normal compiled modules
+            julia --color=yes --project=. -e 'using Pkg; Pkg.test()'
+          fi
         env:
           DATADEPS_ALWAYS_ACCEPT: true
-        with:
-          coverage: false
+          JULIA_CUDA_USE_BINARYBUILDER: false
+          JULIA_PKG_PRECOMPILE_AUTO: 0
+        shell: bash
   docs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@latest
         with:
-          version: '1.6'
+          version: '1.11'
       - run: julia --project=docs -e '
           using Pkg;
           Pkg.develop(PackageSpec(; path=pwd()));

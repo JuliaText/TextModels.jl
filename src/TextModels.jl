@@ -8,7 +8,8 @@ module TextModels
 
 
     using Flux, Zygote
-    using Flux: identity, onehot, onecold, @functor, onehotbatch
+    using Flux: identity, onehot, onecold, onehotbatch
+    using Functors
 
 
     using TextAnalysis
@@ -47,6 +48,7 @@ module TextModels
         using BSON
         using CorpusLoaders
         using DataDeps
+        using DelimitedFiles
         include("ULMFiT/utils.jl")
         include("ULMFiT/datadeps.jl")
         include("ULMFiT/data_loaders.jl")
@@ -54,6 +56,7 @@ module TextModels
         include("ULMFiT/pretrain_lm.jl")
         include("ULMFiT/fine_tune_lm.jl")
         include("ULMFiT/train_text_classifier.jl")
+        include("ULMFiT/sentiment.jl")
     end
     export ULMFiT
 
