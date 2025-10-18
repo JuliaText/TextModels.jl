@@ -313,7 +313,7 @@ predict(tagger::PerceptronTagger, sd::StringDocument) =
 predict(tagger::PerceptronTagger, fd::FileDocument) =
         predict(tagger, text(fd))
 predict(tagger::PerceptronTagger, td::TokenDocument) =
-        predict(tagger, tokens(td))
+        predict(tagger, TextAnalysis.tokens(td))
 function predict(tagger::PerceptronTagger, ngd::NGramDocument)
     @warn "POS tagging for NGramDocument not available."
 end
