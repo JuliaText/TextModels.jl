@@ -138,20 +138,24 @@ and train more or can be used to predict
 ## To train:
 
 ```julia
+julia> using TextModels: PerceptronTagger, fit!
 julia> tagger = PerceptronTagger(false)
-
-julia> fit!(tagger, [[("today","NN"),("is","VBZ"),("good","JJ"),("day","NN")]])
+julia> sentences = [[("today","NN"),("is","VBZ"),("good","JJ"),("day","NN")]]
+julia> fit!(tagger, sentences, 2)  # Train for 2 iterations
 ```
 
 ## To load pretrain model:
 
 ```julia
+julia> using TextModels: PerceptronTagger
 julia> tagger = PerceptronTagger(true)
 ```
 
 ## To predict tag:
 
 ```julia
+julia> using TextModels: PerceptronTagger, predict
+julia> tagger = PerceptronTagger(true)  # Load pretrained model
 julia> predict(tagger, ["today", "is"])
 ```
 """

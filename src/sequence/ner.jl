@@ -29,6 +29,34 @@ function load_model_dicts(filepath, remove_tag_prefix)
     return remove_ner_label_prefix.([labels...]), chars_idx, words_idx
 end
 
+"""
+    NERTagger()
+    NERTagger(dicts_path, weights_path)
+
+Creates a Named Entity Recognition tagger using a pretrained BiLSTM-CNN-CRF model.
+
+The model supports 4 types of Named Entities:
+- `PER`: Person
+- `LOC`: Location  
+- `ORG`: Organisation
+- `MISC`: Miscellaneous
+- `O`: Not a Named Entity
+
+# Arguments
+- `dicts_path::String`: Path to model dictionaries (character and word embeddings)
+- `weights_path::String`: Path to model weights
+
+# Usage
+```julia
+julia> ner = NERTagger()  # Downloads pretrained model on first use
+julia> ner("John works at Google in California")
+```
+
+!!! note
+    When calling `NERTagger()` for the first time, the package will download 
+    the model dictionaries and weights. These are stored locally and managed 
+    by DataDeps for subsequent uses.
+"""
 NERTagger() = NERTagger(datadep"NER Model Dicts", datadep"NER Model Weights")
 
 function NERTagger(dicts_path, weights_path)

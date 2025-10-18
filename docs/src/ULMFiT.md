@@ -1,10 +1,10 @@
 # ULMFiT
 
-This is the implementation of [Universal Language Model Fine-tuning for Text Classification](https://arxiv.org/pdf/1801.06146.pdf) paper released by the Jeremy Howard and Sebastian Ruder. The model can be used for several classification tasks in Natural Language Processing domain. The model follows the concept of [Transfer learning](https://en.wikipedia.org/wiki/Transfer_learning). Here, the model was trained to perform Sentiment Analysis task. The weights for that is also provided and also the weights for the Language model part of the ULMFiT is provided so that it can be used to fine-tune the model for different tasks.
+This is the implementation of the [Universal Language Model Fine-tuning for Text Classification](https://arxiv.org/pdf/1801.06146.pdf) paper released by Jeremy Howard and Sebastian Ruder. The model can be used for several classification tasks in the Natural Language Processing domain. The model follows the concept of [Transfer learning](https://en.wikipedia.org/wiki/Transfer_learning). Here, the model was trained to perform a Sentiment Analysis task. The weights for this are also provided, as well as the weights for the Language model part of ULMFiT, so that it can be used to fine-tune the model for different tasks.
 
 ## Data Loading and Preprocessing
 
-Proper preprocessing is essential before start training ULMFiT. For pretraining step for Language model, a general-purpose corpus is needed, which here is WikiText-103 by default. Similarly, for fine-tuning Language Model and fine-tuning classifier we need a dataset for the specific task (example IMDB for Sentiment Analysis, large scale AG news and DBpedia ontology datasets for Topic classification etc). To load data for these steps, data loaders are needed to be defined. Since the data used to train for such a large model is large, so it is not recommended to load all the data at once, instead the data should be loaded in batches through concept of tasks (or coroutines) in Julia (Refer [this](https://docs.julialang.org/en/v1.0/manual/control-flow/#man-tasks-1) documentation for understanding tasks in Julia) using `Channels`. Basically, we need to create `Channel` which supply a mini-batch at every call. As example the functions used for preprocessing of the IMDB dataset used is given in the `data_loaders.jl` in ULMFiT directory. Also, for loading WikiText-103 dataset and IMDB dataset default functions are provided in same file.
+Proper preprocessing is essential before starting training ULMFiT. For the pretraining step for Language model, a general-purpose corpus is needed, which here is WikiText-103 by default. Similarly, for fine-tuning Language Model and fine-tuning classifier we need a dataset for the specific task (example IMDB for Sentiment Analysis, large scale AG news and DBpedia ontology datasets for Topic classification etc). To load data for these steps, data loaders need to be defined. Since the data used to train such a large model is large, it is not recommended to load all the data at once, instead the data should be loaded in batches through the concept of tasks (or coroutines) in Julia (Refer to [this](https://docs.julialang.org/en/v1.0/manual/control-flow/#man-tasks-1) documentation for understanding tasks in Julia) using `Channels`. Basically, we need to create a `Channel` which supplies a mini-batch at every call. As an example, the functions used for preprocessing of the IMDB dataset are given in the `data_loaders.jl` in the ULMFiT directory. Also, for loading WikiText-103 dataset and IMDB dataset, default functions are provided in the same file.
 
 Default data loaders are provided in the `data_loaders.jl`:
 
@@ -12,11 +12,11 @@ Default data loaders are provided in the `data_loaders.jl`:
  * `imdb_fine_tune_data`  : returns `Channel` for loading fine-tuning data from IMDb movie review dataset
  * `imdb_classifier_data` : returns `Channel` for loading classification data from IMDB movie review dataset for binary sentiment analysis
 
- To make custom loaders, have a look into these functions. These will give clear idea of preparation of batches inside data loaders.
+ To make custom loaders, have a look at these functions. These will give a clear idea of the preparation of batches inside data loaders.
 
-## Step 1 - Pre-training Language Model
+## Step 1 - Pretraining Language Model
 
-In this step, Language Model will learn the general properties of the Language. To train the model we need a general domain corpus like WikiText-103. For training, a `generator` function is provided to create a `Channel` which will give mini-batch in every call. After pre-processing the corpus, the tokenized corpus is given as input to the generator function and the Channel can be created like so:
+In this step, the Language Model will learn the general properties of the language. To train the model we need a general domain corpus like WikiText-103. For training, a `generator` function is provided to create a `Channel` which will give a mini-batch in every call. After pre-processing the corpus, the tokenized corpus is given as input to the generator function and the Channel can be created like so:
 ```julia
 julia> loader = ULMFiT.imdb_fine_tune_data(4, 10) # batchsize=4, bptt=10
 Channel{Any}(0) (1 item available)
@@ -51,17 +51,17 @@ julia> Y = take!(loader)
  ["say", "office", ",", "a"]
 
 ```
-Note that at the first call to this `Channel` the output will be maximum number of batches which it can give. Two calls to this `Channel` completed one batch, that is, it doesnot give `X` and `Y` both together in one call, two calls are needed, one first `X` is given out and in second `Y`. Also, to understand what are `batchsize` and `bptt`, refer this [blog](https://nextjournal.com/ComputerMaestro/jsoc19-practical-implementation-of-ulmfit-in-julia-2).
+Note that at the first call to this `Channel` the output will be the maximum number of batches which it can give. Two calls to this `Channel` complete one batch, that is, it does not give `X` and `Y` both together in one call, two calls are needed: first `X` is given out and in the second call `Y`. Also, to understand what `batchsize` and `bptt` are, refer to this [blog](https://nextjournal.com/ComputerMaestro/jsoc19-practical-implementation-of-ulmfit-in-julia-2).
 
-### Training Language Model:
+### Training Language Model
 
-File `pretrain_lm.jl` contains the whole implementation of the `LanguageModel`. To start training, first, create an instance of `LanguageModel` type, then use the below specified function with appropriate arguments.
+The file `pretrain_lm.jl` contains the whole implementation of the `LanguageModel`. To start training, first create an instance of the `LanguageModel` type, then use the below specified function with appropriate arguments.
 
 ```julia
 julia> lm = LanguageModel()
 ```
 
-It has several arguments to defined the internal structure of the `LanguageModel` instance:
+It has several arguments to define the internal structure of the `LanguageModel` instance:
 [All are keyword arguments and optional]
 
  * `embedding_size`      : defines size of embeddings for embedding matrix in `DroppedEmbeddings` layer (default value is 400)
@@ -84,14 +84,14 @@ pretrain_lm!(lm::LanguageModel=LanguageModel(),
 
 Positional Arguments:
 
- * `lm`               : instance of `LanguageModel struct`
+ * `lm`               : instance of `LanguageModel` struct
  * `data_loader`      : this `Channel` is created to load the data from the general-domain corpus
 
 Keyword Arguments:
 
- * `base_lr`          : learning rate for `ADAM` optimizers
+ * `base_lr`          : learning rate for `ADAM` optimizer
  * `epochs`           : number of epochs
- * `checkpoint_itvl`  : Stands for Checkpoint interval, interval of number of iterations after which the model weights are saved to a specified BSON file
+ * `checkpoint_itvl`  : Checkpoint interval, the number of iterations after which the model weights are saved to a specified BSON file
 
 [All default values shown above]
 
@@ -99,11 +99,11 @@ To know the full implementation of the `LanguageModel`, `AWD_LSTM` layer and `Dr
 
 ## Step 2 - Fine-tuning Language Model
 
-In this step, the Language Model pretrained in the last step, will be fine-tuned on the target data of the downstream task (e.g. sentiment analysis). Again preprocess the text data from the dataset and create a `Channel` using the `generator` function. `fine_tune_lm.jl` contains all the functions related to fine-tuning of the Language model.
+In this step, the Language Model pretrained in the last step will be fine-tuned on the target data of the downstream task (e.g. sentiment analysis). Again, preprocess the text data from the dataset and create a `Channel` using the `generator` function. The file `fine_tune_lm.jl` contains all the functions related to fine-tuning of the Language model.
 
-### Fine-tune Language model:
+### Fine-tune Language Model
 
-`fine_tune_lm!` function is used to fine-tune a Language Model:
+The `fine_tune_lm!` function is used to fine-tune a Language Model:
 
 ```julia
 fine_tune_lm!(lm::LanguageModel=load_lm(),
@@ -118,7 +118,7 @@ fine_tune_lm!(lm::LanguageModel=load_lm(),
 
 Positional Arguments:
 
- * `lm`               : Instance of `LanguageModel struct`
+ * `lm`               : Instance of `LanguageModel` struct
  * `data_loader`      : `Channel` created to load mini-batches from target data
 
 Keyword Arguments:
@@ -126,21 +126,21 @@ Keyword Arguments:
  * `stlr_cut_frac`    : In STLR, it is the fraction of iterations for which LR is increased
  * `stlr_ratio`       : In STLR, it specifies how much smaller is lowest LR from maximum LR
  * `stlr_η_max`       : In STLR, this is the maximum LR value
- * `epochs`           : It is simply the number of epochs for which the language model is to be fine-tuned
- * `checkpoint_itvl`  : Stands for Checkpoint interval, interval of number of iterations after which the model weights are saved to a specified BSON file
+ * `epochs`           : the number of epochs for which the language model is to be fine-tuned
+ * `checkpoint_itvl`  : Checkpoint interval, the number of iterations after which the model weights are saved to a specified BSON file
 
 [All default values shown above]
 By default the `fine_tune_lm!` function will load a pretrained model if a `LanguageModel` instance is not provided.
 
-In fine-tuning step, some additional techniques are used to for training, namely, Discriminative fine-tuning and Slanted triangular learning rates (STLR). To know there implementation refer [this](https://nextjournal.com/ComputerMaestro/jsoc19-practical-implementation-of-ulmfit-in-julia-3) blog.
+In the fine-tuning step, some additional techniques are used for training, namely, Discriminative fine-tuning and Slanted triangular learning rates (STLR). To know their implementation refer to [this](https://nextjournal.com/ComputerMaestro/jsoc19-practical-implementation-of-ulmfit-in-julia-3) blog.
 
 ## Step 3 - Fine-tuning the classifier for downstream task
 
-This is the final step of training ULMFiT model for a specifc task. Here, two linear blocks will be in addition with the Language model layers. These are `PooledDense` and `Dense`. To know more about them go through [this](https://nextjournal.com/ComputerMaestro/jsoc19-practical-implementation-of-ulmfit-in-julia-5) blog post.
+This is the final step of training the ULMFiT model for a specific task. Here, two linear blocks will be added to the Language model layers. These are `PooledDense` and `Dense`. To know more about them go through [this](https://nextjournal.com/ComputerMaestro/jsoc19-practical-implementation-of-ulmfit-in-julia-5) blog post.
 
 ### Fine-tune text classifier
 
-Before start of training, it is required to make an instance of the `TextClassifier` type like so:
+Before starting training, it is required to make an instance of the `TextClassifier` type like so:
 
 ```julia
 julia> classifier = TextClassifier()
@@ -154,7 +154,7 @@ Arguments:
   * `clsfr_hidden_sz`      : hidden `PooledDense` layer size of classifier [default value is 50]
   * `clsfr_hidden_drop`    : dropout probability for the `PooledDense` layer [hidden layer] of classifier [default value is 0.4]
 
-To start training use `train_classifier!` function:
+To start training, use the `train_classifier!` function:
 
 ```julia
 train_classifier!(classifier::TextClassifier=TextClassifier(),
@@ -173,10 +173,10 @@ train_classifier!(classifier::TextClassifier=TextClassifier(),
 
 Positional Arguments:
 
- * `lm`               : Instance of `LanguageModel struct`
+ * `lm`               : Instance of `LanguageModel` struct
  * `classes`          : Size of output layer for classifier or number of classes for which the classifier is to be trained
- * `data_loader`     : `Channel` created to load mini-batches for classification
- * `hidden_layer_size`: Size of the hidden linear layer added for making classifier
+ * `data_loader`      : `Channel` created to load mini-batches for classification
+ * `hidden_layer_size`: Size of the hidden linear layer added for making the classifier
 
 Keyword Arguments:
 
@@ -184,19 +184,19 @@ Keyword Arguments:
  * `stlr_ratio`       : In STLR, it specifies how much smaller is lowest LR from maximum LR
  * `stlr_η_max`       : In STLR, this is the maximum LR value
  * `val_loader`       : `Channel` which will load the cross validation set as mini-batches same as `data_loader`
- * `cross_val_batches`: number of cross validation batches for the accuracy and loss will be printed
- * `epochs`           : It is simply the number of epochs for which the language model is to be fine-tuned
- * `checkpoint_itvl`  : Stands for Checkpoint interval, interval of number of iterations after which the model weights are saved to a specified BSON file
+ * `cross_val_batches`: number of cross validation batches for which the accuracy and loss will be printed
+ * `epochs`           : the number of epochs for which the language model is to be fine-tuned
+ * `checkpoint_itvl`  : Checkpoint interval, the number of iterations after which the model weights are saved to a specified BSON file
 
-[All defaults values are shown above]
+[All default values are shown above]
 
 ## Layers
 
-There are some custom layers added for this model to work properly. All of them are described below, go though all of them to have a better understanding of the model.
+There are some custom layers added for this model to work properly. All of them are described below; go through all of them to have a better understanding of the model.
 
 ### Weight-Dropped LSTM (WeightDroppedLSTM)
 
-This is basically a modification to the original LSTM layer. The layer uses [DropConnect](http://yann.lecun.com/exdb/publis/pdf/wan-icml-13.pdf) with [Variational-dropping](https://arxiv.org/abs/1506.02557) concepts. In which, the hidden-to-hidden weights and input-to-hidden weights can be dropped randomly for given probability. That means, the layer uses the same drop mask for all timesteps and to do this, the layer saves the masks. To change the mask `reset_masks!` function should be used.
+This is basically a modification to the original LSTM layer. The layer uses [DropConnect](http://yann.lecun.com/exdb/publis/pdf/wan-icml-13.pdf) with [Variational-dropping](https://arxiv.org/abs/1506.02557) concepts. In this approach, the hidden-to-hidden weights and input-to-hidden weights can be dropped randomly for a given probability. That means the layer uses the same drop mask for all timesteps and to do this, the layer saves the masks. To change the mask, the `reset_masks!` function should be used.
 
 ```julia
 # maskWi and maskWh are drop masks for Wi and Wh weights
@@ -208,13 +208,10 @@ julia> wd = ULMFiT.WeightDroppedLSTM(4, 5, 0.3);
 
 # Pass
 julia> x = rand(4);
-julia> h = wd(x)
-5×1 Matrix{Float64}:
-  0.17602923394922002
-  0.08615001440875035
-  0.015924513976372016
-  0.10526862977034518
- -0.04417581280319146
+julia> state = wd(x)
+(([0.6103202972778569; 0.6103202972778569; 0.6103202972778569; 0.6103202972778569; 0.6103202972778569;;], [0.7274433138892508; 0.7274433138892508; 0.7274433138892508; 0.7274433138892508; 0.7274433138892508;;]), [0.6103202972778569; 0.6103202972778569; 0.6103202972778569; 0.6103202972778569; 0.6103202972778569;;])
+
+# The output is a tuple containing ((hidden_state, cell_state), output)
 
 # To reset_masks!
 julia> ULMFiT.reset_masks!(wd)
@@ -239,63 +236,37 @@ julia> awd.T
 
 # Pass
 julia> x = rand(3);
-julia> h = awd(x)
-4×1 Matrix{Float64}:
-  0.15229648590284084
- -0.05929450272853615
- -0.06110043118692251
-  0.15302430271141032
+julia> state = awd(x)
+(([0.6103202972778569; 0.6103202972778569; 0.6103202972778569; 0.6103202972778569;;], [0.7274433138892508; 0.7274433138892508; 0.7274433138892508; 0.7274433138892508;;]), [0.6103202972778569; 0.6103202972778569; 0.6103202972778569; 0.6103202972778569;;])
 
  # Resetting drop masks
-julia> awd.layer.cell.maskWi
-16×3 Matrix{Float32}:
- 0.0  0.0  0.0
- 2.0  0.0  0.0
- 0.0  2.0  0.0
- 0.0  0.0  0.0
- 2.0  2.0  2.0
- 0.0  2.0  0.0
- 2.0  0.0  2.0
- 2.0  2.0  2.0
- 2.0  0.0  0.0
- 0.0  0.0  2.0
- 2.0  0.0  0.0
- 2.0  0.0  2.0
- 0.0  2.0  0.0
- 0.0  2.0  0.0
- 2.0  2.0  2.0
- 2.0  2.0  2.0
+julia> awd.layer.cell.maskWi[1:5, :]
+3×3 Matrix{Float32}:
+ 1.21938  1.21039  1.73037
+ 0.0      0.0      0.0
+ 0.0      1.35731  1.04278
+ 0.0      1.058    0.0
+ 0.0      1.1709   1.12383
 
 julia> ULMFiT.reset_masks!(awd)
-julia> awd.layer.cell.maskWi
-16×3 Matrix{Float32}:
- 0.0  2.0  0.0
- 0.0  2.0  0.0
- 0.0  0.0  0.0
- 2.0  2.0  0.0
- 2.0  2.0  2.0
- 2.0  2.0  2.0
- 0.0  2.0  0.0
- 2.0  2.0  0.0
- 2.0  0.0  2.0
- 0.0  0.0  2.0
- 2.0  0.0  0.0
- 2.0  2.0  2.0
- 0.0  0.0  2.0
- 0.0  2.0  2.0
- 2.0  0.0  2.0
- 0.0  0.0  2.0
+julia> awd.layer.cell.maskWi[1:5, :]
+3×3 Matrix{Float32}:
+ 1.22731  0.0      1.95435
+ 0.0      1.28479  0.0
+ 0.0      1.51710  1.41950
+ 1.68891  0.0      0.0
+ 0.0      0.0      0.0
 ```
 
 ### Variational-DropOut (VarDrop)
 
-This layer applis Variational-DropOut, which is, using same dropout mask till it is not specified to change or till a pass is over. This dropout is useful for recurrent layers since these layers perform better if same mask is used for all time-steps (pass) instead of using different for every timestep. [Refer [this](https://arxiv.org/pdf/1506.02557.pdf) paper for more details]. This layer saves the masks after generation till it is not specified to change. To change the mask use `reset_masks!` function.
+This layer applies Variational-DropOut, which is using the same dropout mask until it is specified to change or until a pass is over. This dropout is useful for recurrent layers since these layers perform better if the same mask is used for all time-steps (pass) instead of using different masks for every timestep. [Refer to [this](https://arxiv.org/pdf/1506.02557.pdf) paper for more details]. This layer saves the masks after generation until it is specified to change. To change the mask use the `reset_masks!` function.
 
 ```julia
 julia> vd = ULMFiT.VarDrop(0.5)
 VarDrop{Float64}(0.5, Matrix{Float32}(undef, 0, 0), true, true)
 
-# No mask generation will nothing is passed
+# No mask generation when nothing is passed
 julia> vd.mask
 0×0 Matrix{Float32}
 
@@ -324,7 +295,7 @@ julia> vd.mask
 
 ### Dropped Embeddings (DroppedEmbeddings)
 
-This layer is an embedding layer which can work in two ways either to give embeddings Vectors for the given indices of words in vocabulary or can be used to get probability distribution for all the words of vocabulary with softmax layer, which is also called as weight-tying. Here, it can be used to tie weights of the embedding layer and the last softmax layer. In addition to this, it also dropped embeddings for words randomly for given probability of dropping, in other words, it puts whole embedding vector of randomly selects to vector of zeros. Here, the mask used for the dropping posses variational property, that is, it cannot be changed till it is not specified to change or generate a new drop mask. `reset_masks!` should be used to reset the mask.
+This layer is an embedding layer which can work in two ways: either to give embedding vectors for the given indices of words in vocabulary or can be used to get probability distribution for all the words of vocabulary with a softmax layer, which is also called weight-tying. Here, it can be used to tie weights of the embedding layer and the last softmax layer. In addition to this, it also drops embeddings for words randomly for a given probability of dropping; in other words, it puts the whole embedding vector of randomly selected words to a vector of zeros. Here, the mask used for the dropping possesses a variational property, that is, it cannot be changed until it is specified to change or generate a new drop mask. `reset_masks!` should be used to reset the mask.
 
 ```julia
 julia> fieldnames(ULMFiT.DroppedEmbeddings)
@@ -336,26 +307,26 @@ julia> de = ULMFiT.DroppedEmbeddings(5, 2, 0.3);
 julia> x = [4,2,1];
 julia> embeddings = de(x)
 2×3 transpose(::Matrix{Float32}) with eltype Float32:
-  0.363157  -0.0246867  -0.332342
- -0.553211  -0.594884    0.184288
+ -0.0805887  0.0  0.0
+ -0.147202  -0.0 -0.0
 
 julia> de.mask
 5-element Vector{Float32}:
- 1.4285715
- 1.4285715
- 1.4285715
- 1.4285715
- 1.4285715
+ 0.0
+ 0.0
+ 0.0
+ 0.87639743
+ 0.0
 
 # reset mask
 julia> reset_masks!(de)
 julia> de.mask
 5-element Vector{Float32}:
- 1.4285715
- 1.4285715
- 1.4285715
+ 0.0
+ 0.6529015
  0.0
  0.0
+ 0.5247689
 ```
 
 ### Concat-Pooled Dense layer
