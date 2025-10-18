@@ -94,5 +94,5 @@ Predict sentiment of the input doc in range 0 to 1, 0 being least sentiment scor
 -  handle_unknown   = A function for handling unknown words. Should return an array (default x->tuple())
 """
 function(m::SentimentAnalyzer)(d::AbstractDocument, handle_unknown = x->tuple())
-    m.model(handle_unknown, tokens(d))
+    m.model(handle_unknown, TextAnalysis.tokens(d))
 end

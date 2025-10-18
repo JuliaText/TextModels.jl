@@ -138,20 +138,24 @@ and train more or can be used to predict
 ## To train:
 
 ```julia
+julia> using TextModels: PerceptronTagger, fit!
 julia> tagger = PerceptronTagger(false)
-
-julia> fit!(tagger, [[("today","NN"),("is","VBZ"),("good","JJ"),("day","NN")]])
+julia> sentences = [[("today","NN"),("is","VBZ"),("good","JJ"),("day","NN")]]
+julia> fit!(tagger, sentences, 2)  # Train for 2 iterations
 ```
 
 ## To load pretrain model:
 
 ```julia
+julia> using TextModels: PerceptronTagger
 julia> tagger = PerceptronTagger(true)
 ```
 
 ## To predict tag:
 
 ```julia
+julia> using TextModels: PerceptronTagger, predict
+julia> tagger = PerceptronTagger(true)  # Load pretrained model
 julia> predict(tagger, ["today", "is"])
 ```
 """
@@ -313,7 +317,7 @@ predict(tagger::PerceptronTagger, sd::StringDocument) =
 predict(tagger::PerceptronTagger, fd::FileDocument) =
         predict(tagger, text(fd))
 predict(tagger::PerceptronTagger, td::TokenDocument) =
-        predict(tagger, tokens(td))
+        predict(tagger, TextAnalysis.tokens(td))
 function predict(tagger::PerceptronTagger, ngd::NGramDocument)
     @warn "POS tagging for NGramDocument not available."
 end
